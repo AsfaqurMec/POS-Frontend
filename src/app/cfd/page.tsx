@@ -1,10 +1,9 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Coffee, CheckCircle2, Sparkles, ShoppingBag, Clock, Maximize2, Minimize2 } from "lucide-react";
+import { Coffee, CheckCircle2, Sparkles, ShoppingBag, Clock } from "lucide-react";
 import { cfdChannel, CfdBroadcastMessage, CfdCartItem } from "@/lib/broadcast";
 import { useBusiness } from "@/hooks/useQueries";
-import { useDisplayMode } from "@/hooks/useDisplayMode";
 import { getMediaUrl } from "@/lib/env";
 
 export default function CustomerFacingDisplayPage() {
@@ -35,20 +34,6 @@ export default function CustomerFacingDisplayPage() {
   } | null>(null);
 
   const [currentTime, setCurrentTime] = useState("");
-
-  const {
-    isFullscreen,
-    isStandalone,
-    isSupported: isFullscreenSupported,
-    toggleFullscreen,
-    enterFullscreen,
-  } = useDisplayMode();
-
-  const handleDisplayClick = () => {
-    if (!isFullscreen && !isStandalone && isFullscreenSupported) {
-      enterFullscreen();
-    }
-  };
 
   // Ensure Customer Facing Display is ALWAYS in crisp, light theme
   useEffect(() => {
@@ -181,10 +166,7 @@ export default function CustomerFacingDisplayPage() {
   const logoUrl = business?.logoUrl ? getMediaUrl(business.logoUrl) : null;
 
   return (
-    <div
-      onClick={handleDisplayClick}
-      className="min-h-screen bg-[#FDFBF7] text-[#231815] flex flex-col justify-between p-2 select-none font-sans overflow-hidden cursor-default"
-    >
+    <div className="min-h-screen bg-[#FDFBF7] text-[#231815] flex flex-col justify-between p-2 select-none font-sans overflow-hidden cursor-default">
       {/* 1. Top Header Bar */}
       <header className="flex items-center justify-between bg-white border border-[#EADBCE] rounded-md px-4 py-2 shadow-xs">
         <div className="flex items-center gap-4">
@@ -226,38 +208,12 @@ export default function CustomerFacingDisplayPage() {
           </div>
         </div>
 
-        {/* Real-time Clock & Fullscreen Control */}
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-2 bg-[#F7F2EA] px-3 py-2 rounded-md border border-[#EADBCE]">
-            <Clock className="w-4 h-4 text-amber-800 mr-1" />
-            <span className="text-md font-black text-[#231815] font-mono tracking-wide">
-              {currentTime}
-            </span>
-          </div>
-
-          {isFullscreenSupported && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                toggleFullscreen();
-              }}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-md bg-[#F7F2EA] hover:bg-[#EADBCE] text-amber-900 border border-[#EADBCE] text-xs font-bold transition active:scale-95 shadow-2xs"
-              title={isFullscreen ? "Exit Fullscreen (Esc)" : "Enter Fullscreen (F11)"}
-              aria-label={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
-            >
-              {isFullscreen ? (
-                <>
-                  <Minimize2 className="w-4 h-4 text-amber-800" />
-                  <span className="hidden sm:inline">Exit Fullscreen</span>
-                </>
-              ) : (
-                <>
-                  <Maximize2 className="w-4 h-4 text-amber-800" />
-                  <span className="hidden sm:inline">Full Screen</span>
-                </>
-              )}
-            </button>
-          )}
+        {/* Real-time Clock */}
+        <div className="flex items-center gap-2 bg-[#F7F2EA] px-3 py-2 rounded-md border border-[#EADBCE]">
+          <Clock className="w-4 h-4 text-amber-800 mr-1" />
+          <span className="text-md font-black text-[#231815] font-mono tracking-wide">
+            {currentTime}
+          </span>
         </div>
       </header>
 
@@ -530,17 +486,6 @@ export default function CustomerFacingDisplayPage() {
       <footer className="border-t border-[#EADBCE] pt-3 text-center text-xs text-[#8A7160] font-medium">
         {business?.receiptFooterEn || "Thank you for visiting! Have a wonderful day."}
       </footer>
-
-      {/* Tap to Fullscreen Reminder when in normal browser window */}
-      {!isFullscreen && !isStandalone && isFullscreenSupported && (
-        <div 
-          onClick={handleDisplayClick}
-          className="fixed bottom-4 start-1/2 -translate-x-1/2 z-50 bg-[#231815]/95 hover:bg-[#231815] text-amber-300 text-xs font-bold px-4 py-2 rounded-full shadow-2xl border border-amber-500/50 flex items-center gap-2 cursor-pointer transition active:scale-95 animate-pulse"
-        >
-          <Maximize2 className="w-3.5 h-3.5 text-amber-400" />
-          <span>Tap anywhere to expand to Full Screen</span>
-        </div>
-      )}
     </div>
   );
 }

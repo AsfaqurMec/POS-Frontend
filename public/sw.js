@@ -8,7 +8,7 @@
  * 4. Navigation requests use Network-First to ensure real-time POS data is always fresh.
  */
 
-const CACHE_NAME = 'pos-static-v1';
+const CACHE_NAME = 'pos-static-v2';
 
 // Safe static pre-cache list
 const STATIC_ASSETS = [
@@ -17,7 +17,6 @@ const STATIC_ASSETS = [
   '/icons/icon-512x512.png',
   '/icons/icon-maskable-512x512.png',
   '/icons/apple-touch-icon.png',
-  '/manifest.json',
   '/offline.html'
 ];
 

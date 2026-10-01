@@ -24,16 +24,15 @@ const applyThemeToDOM = (theme: Theme) => {
 
 export const useThemeStore = create<ThemeState>((set, get) => {
   const getInitialTheme = (): Theme => {
-    if (typeof window === "undefined") return "dark";
+    if (typeof window === "undefined") return "light";
     const saved = localStorage.getItem("pos_theme") as Theme | null;
     if (saved === "light" || saved === "dark") {
       applyThemeToDOM(saved);
       return saved;
     }
-    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    const initial = prefersDark ? "dark" : "light";
-    applyThemeToDOM(initial);
-    return initial;
+    // No saved preference → always default to light theme
+    applyThemeToDOM("light");
+    return "light";
   };
 
   const initialTheme = getInitialTheme();

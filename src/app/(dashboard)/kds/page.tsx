@@ -12,11 +12,8 @@ import {
   RefreshCw,
   ShoppingBag,
   Loader2,
-  Maximize2,
-  Minimize2,
 } from "lucide-react";
 import { useKdsOrders, useUpdateKdsStatus } from "@/hooks/useQueries";
-import { useDisplayMode } from "@/hooks/useDisplayMode";
 import { useAuthStore } from "@/store/authStore";
 import { API_BASE_URL } from "@/lib/env";
 import { KdsOrder } from "@/types";
@@ -28,23 +25,6 @@ export default function KdsPage() {
   const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
   const { data: orders, isLoading, refetch } = useKdsOrders(station);
   const updateStatusMutation = useUpdateKdsStatus();
-
-  const {
-    isFullscreen,
-    isStandalone,
-    isSupported: isFullscreenSupported,
-    toggleFullscreen,
-  } = useDisplayMode();
-
-  const [isKioskExpanded, setIsKioskExpanded] = useState(false);
-  const isDedicatedScreen = isFullscreen || isStandalone || isKioskExpanded;
-
-  const handleToggleKiosk = async () => {
-    setIsKioskExpanded((prev) => !prev);
-    if (isFullscreenSupported) {
-      await toggleFullscreen();
-    }
-  };
 
   // Listen to Server-Sent Events (SSE) for instant new order dispatch
   useEffect(() => {
@@ -110,13 +90,7 @@ export default function KdsPage() {
   );
 
   return (
-    <div
-      className={
-        isDedicatedScreen
-          ? "fixed inset-0 z-50 bg-[#F7F3EE] dark:bg-[#120B07] p-3 sm:p-5 flex flex-col space-y-4 overflow-y-auto"
-          : "p-4 sm:p-6 max-w-full mx-auto space-y-6 min-h-screen"
-      }
-    >
+    <div className="fixed inset-0 z-50 bg-[#F7F3EE] dark:bg-[#120B07] p-3 sm:p-5 flex flex-col space-y-4 overflow-y-auto">
       {/* Top Header Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-warmgray-900 border border-warmgray-200 dark:border-warmgray-800 p-5 rounded-3xl shadow-sm">
         <div className="flex items-center gap-3">
@@ -133,7 +107,7 @@ export default function KdsPage() {
           </div>
         </div>
 
-        {/* Station Filter Tabs & Screen Controls */}
+        {/* Station Filter Tabs & Refresh */}
         <div className="flex items-center gap-2 flex-wrap">
           <div className="inline-flex p-1 bg-warmgray-100 dark:bg-warmgray-800 rounded-2xl border border-warmgray-200 dark:border-warmgray-700">
             {(["ALL", "BARISTA", "KITCHEN"] as const).map((s) => (
@@ -158,34 +132,6 @@ export default function KdsPage() {
           >
             <RefreshCw className="w-4 h-4" />
           </button>
-
-          {isFullscreenSupported && (
-            <button
-              onClick={handleToggleKiosk}
-              className={`flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition border ${
-                isDedicatedScreen
-                  ? "bg-amber-600 text-white border-amber-600 shadow-sm"
-                  : "bg-warmgray-100 dark:bg-warmgray-800 text-warmgray-700 dark:text-warmgray-200 hover:bg-warmgray-200 dark:hover:bg-warmgray-700 border-warmgray-200 dark:border-warmgray-700"
-              }`}
-              title={
-                isDedicatedScreen
-                  ? "Exit Fullscreen KDS (Esc)"
-                  : "Enter Dedicated Fullscreen KDS (F11)"
-              }
-            >
-              {isDedicatedScreen ? (
-                <>
-                  <Minimize2 className="w-4 h-4" />
-                  <span className="hidden sm:inline">Exit Fullscreen</span>
-                </>
-              ) : (
-                <>
-                  <Maximize2 className="w-4 h-4" />
-                  <span className="hidden sm:inline">Full Screen KDS</span>
-                </>
-              )}
-            </button>
-          )}
         </div>
       </div>
 
@@ -330,17 +276,6 @@ export default function KdsPage() {
               </div>
             );
           })}
-        </div>
-      )}
-
-      {/* Tap to enter Full Screen KDS prompt when in normal window */}
-      {!isDedicatedScreen && isFullscreenSupported && (
-        <div
-          onClick={handleToggleKiosk}
-          className="fixed bottom-4 start-1/2 -translate-x-1/2 z-40 bg-[#231815]/95 hover:bg-[#231815] text-amber-300 text-xs font-bold px-4 py-2 rounded-full shadow-2xl border border-amber-500/50 flex items-center gap-2 cursor-pointer transition active:scale-95 animate-pulse"
-        >
-          <Maximize2 className="w-3.5 h-3.5 text-amber-400" />
-          <span>Tap to Enter Dedicated Full Screen KDS</span>
         </div>
       )}
     </div>
