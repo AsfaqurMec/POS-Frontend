@@ -3,10 +3,12 @@
 import React, { useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
+import { usePinStore } from "@/store/pinStore";
 import { useBusiness } from "@/hooks/useQueries";
 import { useLangStore } from "@/store/langStore";
 import { Header } from "./Header";
 import { Sidebar } from "./Sidebar";
+import { PinLockModal } from "../modals/PinLockModal";
 import { Wifi, Eye } from "lucide-react";
 
 const adminOnlyRoutes = ["/dashboard", "/products", "/inventory", "/stock-movements", "/users", "/settings"];
@@ -15,6 +17,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const { user, isAuthenticated, isLoading } = useAuthStore();
+  const { isLocked } = usePinStore();
   const { data: business } = useBusiness();
   const { lang } = useLangStore();
 
@@ -52,6 +55,11 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         </div>
       </div>
     );
+  }
+
+  // Zero-DOM-Leakage Security: When locked, render ONLY the lock screen without mounting underlying pages
+  if (isLocked) {
+    return <PinLockModal />;
   }
 
   return (

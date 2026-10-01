@@ -31,7 +31,6 @@ import { useDisplayMode } from "@/hooks/useDisplayMode";
 import { useBusiness, useCurrentShift } from "@/hooks/useQueries";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { PinLockModal } from "../modals/PinLockModal";
 import { ManagerPinModal } from "../modals/ManagerPinModal";
 import { ShiftControlModal } from "../modals/ShiftControlModal";
 
@@ -301,7 +300,6 @@ export function Header() {
       </header>
 
       {/* Global Modals */}
-      <PinLockModal />
       <ManagerPinModal />
       <ShiftControlModal
         isOpen={isShiftModalOpen}

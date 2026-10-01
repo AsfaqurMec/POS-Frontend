@@ -20,12 +20,48 @@ export function PinLockModal() {
   const [pin, setPin] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
+  const lockContainerRef = React.useRef<HTMLDivElement>(null);
 
   // Initialize lock state from localStorage on mount
   useEffect(() => {
     setMounted(true);
     initLockState();
   }, [initLockState]);
+
+  // Anti-Tamper Guardian: Detect if lock screen element is deleted or styled hidden via browser DevTools
+  useEffect(() => {
+    if (!isLocked) return;
+
+    const observer = new MutationObserver(() => {
+      if (!isLocked) return;
+      const el = lockContainerRef.current;
+      if (!el || !document.body.contains(el)) {
+        console.warn("Security Alert: Lock screen DOM deletion detected. Enforcing emergency lockdown.");
+        logout();
+        window.location.href = "/login";
+        return;
+      }
+      const style = window.getComputedStyle(el);
+      if (
+        style.display === "none" ||
+        style.visibility === "hidden" ||
+        parseFloat(style.opacity || "1") < 0.1
+      ) {
+        console.warn("Security Alert: Lock screen CSS tamper detected. Enforcing emergency lockdown.");
+        logout();
+        window.location.href = "/login";
+      }
+    });
+
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["style", "class"],
+    });
+
+    return () => observer.disconnect();
+  }, [isLocked, logout]);
 
   // Auto clear pin & error on open
   useEffect(() => {
@@ -98,7 +134,11 @@ export function PinLockModal() {
   };
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-200">
+    <div
+      ref={lockContainerRef}
+      id="pos-security-lock-screen"
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-[#120B07] p-4 select-none animate-in fade-in duration-200"
+    >
       <div className="w-full max-w-sm bg-white dark:bg-warmgray-900 border border-warmgray-200 dark:border-warmgray-800 rounded-3xl p-6 shadow-2xl text-center space-y-6">
         {/* Header Icon & Brand */}
         <div className="flex flex-col items-center gap-2">

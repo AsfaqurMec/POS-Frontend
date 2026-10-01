@@ -40,14 +40,14 @@ export function ManagerPinModal() {
     setIsVerifying(true);
     setError(null);
     try {
-      const res = await api.post<{ valid: boolean }>("/auth/verify-manager-pin", {
+      const res = await api.post<{ valid: boolean; managerToken: string }>("/auth/verify-manager-pin", {
         pinCode: code,
       });
 
-      if (res && res.valid) {
+      if (res && res.valid && res.managerToken) {
         closeManagerModal();
         if (onManagerSuccess) {
-          onManagerSuccess();
+          onManagerSuccess(res.managerToken);
         }
       }
     } catch (err: any) {

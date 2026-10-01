@@ -7,6 +7,28 @@ class ApiClient {
   }
 
   async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+    const path = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
+
+    // Security Gate: Block API calls if terminal is locked (except unlock and auth endpoints)
+    if (typeof window !== "undefined") {
+      const isLocked = localStorage.getItem("pos_terminal_locked") === "true";
+      const allowedLockedPaths = [
+        "/auth/unlock-terminal",
+        "/auth/verify-manager-pin",
+        "/auth/logout",
+        "/auth/login",
+        "/auth/pin-login",
+        "/auth/guest-login",
+      ];
+      const isAllowed = allowedLockedPaths.some((p) => path.startsWith(p));
+      if (isLocked && !isAllowed) {
+        const err = new Error("Terminal is locked. Please unlock the terminal to perform actions.") as any;
+        err.code = "TERMINAL_LOCKED";
+        err.status = 423; // Locked
+        throw err;
+      }
+    }
+
     const token = this.getToken();
     const headers: Record<string, string> = {
       ...(options.headers as Record<string, string>),
@@ -20,7 +42,6 @@ class ApiClient {
       headers["Content-Type"] = "application/json";
     }
 
-    const path = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
     const response = await fetch(`${API_BASE_URL}${path}`, {
       ...options,
       headers,
@@ -29,6 +50,23 @@ class ApiClient {
     const data = await response.json().catch(() => null);
 
     if (!response.ok) {
+      // Auto-Logout if token is expired, invalid, or revoked
+      if (
+        response.status === 401 &&
+        !path.includes("/auth/login") &&
+        !path.includes("/auth/unlock-terminal") &&
+        !path.includes("/auth/pin-login")
+      ) {
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("pos_token");
+          localStorage.removeItem("pos_user");
+          localStorage.removeItem("pos_terminal_locked");
+          if (!window.location.pathname.includes("/login")) {
+            window.location.href = "/login";
+          }
+        }
+      }
+
       const errorMsg = data?.error?.message || "An unexpected error occurred";
       const errorCode = data?.error?.code || "REQUEST_FAILED";
       const err = new Error(errorMsg) as any;

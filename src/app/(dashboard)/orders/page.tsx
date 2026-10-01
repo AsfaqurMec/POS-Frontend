@@ -133,11 +133,17 @@ export default function OrdersPage() {
 
   const handleVoidSale = (saleId: string) => {
     if (isGuest) return;
-    requestManagerApproval("Authorize Order Void & Stock Refund", () => {
+    if (user?.role === "ADMIN") {
       const reason = window.prompt("Reason for voiding order:", "Customer Refund / Order Cancelled");
       if (!reason) return;
       voidSaleMutation.mutate({ saleId, voidReason: reason, restock: true });
-    });
+    } else {
+      requestManagerApproval("Authorize Order Void & Stock Refund", (managerToken: string) => {
+        const reason = window.prompt("Reason for voiding order:", "Customer Refund / Order Cancelled");
+        if (!reason) return;
+        voidSaleMutation.mutate({ saleId, voidReason: reason, restock: true, managerToken });
+      });
+    }
   };
 
 

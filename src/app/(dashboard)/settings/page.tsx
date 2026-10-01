@@ -597,7 +597,7 @@ export default function SettingsPage() {
                   {users
                     ?.filter((u) => u.role === "ADMIN")
                     .map((user) => {
-                      const currentPin = user.pinCode;
+                      const hasPin = user.hasPin || Boolean(user.pinCode);
                       const inputPin = pinInputs[user.id] ?? "";
                       const isVisible = pinVisibility[user.id] ?? false;
                       const isUpdating = updatingPinUserId === user.id;
@@ -642,11 +642,12 @@ export default function SettingsPage() {
                             <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-white dark:bg-warmgray-900 border border-warmgray-200 dark:border-warmgray-700 text-xs shrink-0">
                               <Lock className="w-3.5 h-3.5 text-warmgray-400" />
                               <span className="text-warmgray-500 text-[11px] font-medium">
-                                {lang === "ar" ? "الرمز الحالي:" : "Current:"}
+                                {lang === "ar" ? "حالة الرمز:" : "PIN Status:"}
                               </span>
-                              {currentPin ? (
-                                <span className="font-mono font-bold text-warmgray-900 dark:text-white tracking-widest bg-warmgray-100 dark:bg-warmgray-800 px-1.5 py-0.5 rounded text-xs">
-                                  {isVisible ? currentPin : "••••"}
+                              {hasPin ? (
+                                <span className="inline-flex items-center gap-1 font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/50 px-2 py-0.5 rounded text-xs">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                  {lang === "ar" ? "معين ومحمي" : "Set & Protected"}
                                 </span>
                               ) : (
                                 <span className="text-[11px] font-semibold text-amber-600 dark:text-amber-400">
@@ -662,7 +663,7 @@ export default function SettingsPage() {
                                 maxLength={6}
                                 value={inputPin}
                                 onChange={(e) => handlePinInputChange(user.id, e.target.value)}
-                                placeholder={currentPin ? "New PIN" : "4-digit PIN"}
+                                placeholder={hasPin ? "New PIN" : "4-digit PIN"}
                                 className="w-28 h-9 px-3 py-1.5 text-center font-mono font-bold text-xs bg-white dark:bg-warmgray-900 border border-warmgray-200 dark:border-warmgray-700 rounded-xl focus:ring-2 focus:ring-amber-500 focus:outline-none tracking-widest placeholder:tracking-normal placeholder:font-sans placeholder:text-warmgray-400"
                               />
 
@@ -703,7 +704,7 @@ export default function SettingsPage() {
                                 <span>{lang === "ar" ? "حفظ" : "Save"}</span>
                               </button>
 
-                              {currentPin && (
+                              {hasPin && (
                                 <button
                                   type="button"
                                   onClick={() => handleRemovePin(user.id)}
@@ -755,7 +756,7 @@ export default function SettingsPage() {
                   {users
                     ?.filter((u) => u.role === "STAFF")
                     .map((user) => {
-                      const currentPin = user.pinCode;
+                      const hasPin = user.hasPin || Boolean(user.pinCode);
                       const inputPin = pinInputs[user.id] ?? "";
                       const isVisible = pinVisibility[user.id] ?? false;
                       const isUpdating = updatingPinUserId === user.id;
@@ -800,11 +801,12 @@ export default function SettingsPage() {
                             <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-white dark:bg-warmgray-900 border border-warmgray-200 dark:border-warmgray-700 text-xs shrink-0">
                               <Lock className="w-3.5 h-3.5 text-warmgray-400" />
                               <span className="text-warmgray-500 text-[11px] font-medium">
-                                {lang === "ar" ? "الرمز الحالي:" : "Current:"}
+                                {lang === "ar" ? "حالة الرمز:" : "PIN Status:"}
                               </span>
-                              {currentPin ? (
-                                <span className="font-mono font-bold text-warmgray-900 dark:text-white tracking-widest bg-warmgray-100 dark:bg-warmgray-800 px-1.5 py-0.5 rounded text-xs">
-                                  {isVisible ? currentPin : "••••"}
+                              {hasPin ? (
+                                <span className="inline-flex items-center gap-1 font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/50 px-2 py-0.5 rounded text-xs">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                  {lang === "ar" ? "معين ومحمي" : "Set & Protected"}
                                 </span>
                               ) : (
                                 <span className="text-[11px] font-semibold text-amber-600 dark:text-amber-400">
@@ -820,7 +822,7 @@ export default function SettingsPage() {
                                 maxLength={6}
                                 value={inputPin}
                                 onChange={(e) => handlePinInputChange(user.id, e.target.value)}
-                                placeholder={currentPin ? "New PIN" : "4-digit PIN"}
+                                placeholder={hasPin ? "New PIN" : "4-digit PIN"}
                                 className="w-28 h-9 px-3 py-1.5 text-center font-mono font-bold text-xs bg-white dark:bg-warmgray-900 border border-warmgray-200 dark:border-warmgray-700 rounded-xl focus:ring-2 focus:ring-amber-500 focus:outline-none tracking-widest placeholder:tracking-normal placeholder:font-sans placeholder:text-warmgray-400"
                               />
 
@@ -862,7 +864,7 @@ export default function SettingsPage() {
                                 <span>{lang === "ar" ? "حفظ" : "Save"}</span>
                               </button>
 
-                              {currentPin && !isGuest && (
+                              {hasPin && !isGuest && (
                                 <button
                                   type="button"
                                   onClick={() => handleRemovePin(user.id)}

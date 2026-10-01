@@ -5,17 +5,19 @@ interface PinState {
   lockReason: string | null;
   isManagerModalOpen: boolean;
   managerActionTitle: string;
-  onManagerSuccess: (() => void) | null;
+  onManagerSuccess: ((managerToken: string) => void) | null;
 
   // Actions
   initLockState: () => void;
   lockTerminal: (reason?: string) => void;
   unlockTerminal: () => void;
-  requestManagerApproval: (actionTitle: string, onSuccess: () => void) => void;
+  requestManagerApproval: (actionTitle: string, onSuccess: (managerToken: string) => void) => void;
   closeManagerModal: () => void;
 }
 
-export const usePinStore = create<PinState>((set) => ({
+let storageListenerInitialized = false;
+
+export const usePinStore = create<PinState>((set, get) => ({
   isLocked: false,
   lockReason: null,
   isManagerModalOpen: false,
@@ -28,6 +30,20 @@ export const usePinStore = create<PinState>((set) => ({
       const savedReason = localStorage.getItem("pos_lock_reason");
       if (savedLocked) {
         set({ isLocked: true, lockReason: savedReason || "Terminal Locked" });
+      }
+
+      // Anti-Tamper: Prevent bypassing terminal lock by modifying localStorage in DevTools
+      if (!storageListenerInitialized) {
+        storageListenerInitialized = true;
+        window.addEventListener("storage", (e) => {
+          if (get().isLocked) {
+            if (e.key === "pos_terminal_locked" && e.newValue !== "true") {
+              try {
+                localStorage.setItem("pos_terminal_locked", "true");
+              } catch {}
+            }
+          }
+        });
       }
     }
   },

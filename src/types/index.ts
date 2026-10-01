@@ -11,6 +11,7 @@ export interface User {
   email: string;
   role: Role;
   status: Status;
+  hasPin?: boolean;
   pinCode?: string | null;
   createdAt: string;
 }

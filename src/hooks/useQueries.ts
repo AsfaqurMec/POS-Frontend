@@ -242,8 +242,12 @@ export function useDeleteHeldOrder() {
 export function useVoidSale() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (data: { saleId: string; voidReason: string; restock?: boolean }) =>
-      api.post(`/sales/${data.saleId}/void`, { voidReason: data.voidReason, restock: data.restock }),
+    mutationFn: (data: { saleId: string; voidReason: string; restock?: boolean; managerToken?: string }) =>
+      api.post(`/sales/${data.saleId}/void`, {
+        voidReason: data.voidReason,
+        restock: data.restock,
+        managerToken: data.managerToken,
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["sales"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] });
