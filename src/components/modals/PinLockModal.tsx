@@ -175,22 +175,6 @@ export function PinLockModal() {
           </button>
         </div>
 
-        {/* Demo Fast-fill Badges for instant testing */}
-        <div className="pt-2 border-t border-warmgray-100 dark:border-warmgray-800 flex items-center justify-center gap-2">
-          <span className="text-[11px] text-warmgray-400 font-medium">Demo:</span>
-          <button
-            onClick={() => handleVerify("1234")}
-            className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20 transition"
-          >
-            Admin (1234)
-          </button>
-          <button
-            onClick={() => handleVerify("5678")}
-            className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-500/20 transition"
-          >
-            Staff (5678)
-          </button>
-        </div>
 
         {/* Switch Account */}
         <div className="pt-2 border-t border-warmgray-100 dark:border-warmgray-800">

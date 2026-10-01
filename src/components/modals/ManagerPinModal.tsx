@@ -134,14 +134,6 @@ export function ManagerPinModal() {
           </button>
         </div>
 
-        <div className="text-center pt-1 border-t border-warmgray-100 dark:border-warmgray-800">
-          <button
-            onClick={() => verifyManagerPin("1234")}
-            className="text-[11px] font-bold text-purple-600 dark:text-purple-400 hover:underline"
-          >
-            Quick Fill Demo Manager PIN (1234)
-          </button>
-        </div>
       </div>
     </div>
   );
