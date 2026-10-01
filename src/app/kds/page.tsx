@@ -11,9 +11,8 @@ import {
 import { useKdsOrders, useUpdateKdsStatus } from "@/hooks/useQueries";
 import { useAuthStore } from "@/store/authStore";
 import { API_BASE_URL } from "@/lib/env";
-import { KdsOrder } from "@/types";
 
-export default function KdsPage() {
+export default function KdsStandalonePage() {
   const { user } = useAuthStore();
   const isGuest = user?.role === "GUEST";
   const [station, setStation] = useState<"ALL" | "BARISTA" | "KITCHEN">("ALL");
@@ -21,7 +20,7 @@ export default function KdsPage() {
   const { data: orders, isLoading, refetch } = useKdsOrders(station);
   const updateStatusMutation = useUpdateKdsStatus();
 
-  // Listen to Server-Sent Events (SSE) for instant new order dispatch
+  // Listen to Server-Sent Events for instant new order dispatch
   useEffect(() => {
     let eventSource: EventSource | null = null;
     try {
@@ -76,8 +75,8 @@ export default function KdsPage() {
   );
 
   return (
-    <div className="p-4 sm:p-6 max-w-full mx-auto space-y-6 overflow-y-auto">
-      {/* Top Header Bar */}
+    <div className="fixed inset-0 bg-[#F7F3EE] dark:bg-[#120B07] p-3 sm:p-5 flex flex-col space-y-4 overflow-y-auto">
+      {/* Header Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-warmgray-900 border border-warmgray-200 dark:border-warmgray-800 p-5 rounded-3xl shadow-sm">
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center border border-amber-500/30">
@@ -93,7 +92,7 @@ export default function KdsPage() {
           </div>
         </div>
 
-        {/* Station Filter Tabs & Refresh */}
+        {/* Station Filter & Refresh */}
         <div className="flex items-center gap-2 flex-wrap">
           <div className="inline-flex p-1 bg-warmgray-100 dark:bg-warmgray-800 rounded-2xl border border-warmgray-200 dark:border-warmgray-700">
             {(["ALL", "BARISTA", "KITCHEN"] as const).map((s) => (
@@ -213,7 +212,7 @@ export default function KdsPage() {
                   ))}
                 </div>
 
-                {/* Bump Bar Action Button */}
+                {/* Bump Button */}
                 <div className="p-3 border-t border-warmgray-100 dark:border-warmgray-800 bg-warmgray-50/50 dark:bg-warmgray-800/20">
                   <button
                     onClick={() => handleBump(order.id, order.status)}

@@ -172,18 +172,27 @@ export function Header() {
             type="button"
             onClick={() => {
               if (typeof window !== "undefined") {
-                const popup = window.open(
-                  "/cfd",
-                  "CFD_Customer_Display",
-                  "popup=yes,menubar=no,toolbar=no,location=no,status=no,resizable=yes,scrollbars=no,width=1280,height=800"
-                );
-                if (popup) popup.focus();
+                window.open("/cfd", "_blank", "noopener,noreferrer");
               }
             }}
             className="p-1.5 rounded-xl bg-[#251810] border border-[#382418] text-warmgray-300 hover:text-white transition flex items-center gap-1"
-            title="Open Customer Facing Display (/cfd) in Dedicated Window"
+            title="Open Customer Facing Display in New Tab"
           >
             <Tv className="w-4 h-4 text-amber-400" />
+          </button>
+
+          {/* Kitchen Display System (KDS) Launch */}
+          <button
+            type="button"
+            onClick={() => {
+              if (typeof window !== "undefined") {
+                window.open("/kds", "_blank", "noopener,noreferrer");
+              }
+            }}
+            className="p-1.5 rounded-xl bg-[#251810] border border-[#382418] text-warmgray-300 hover:text-white transition flex items-center gap-1"
+            title="Open Kitchen Display System in New Tab"
+          >
+            <UtensilsCrossed className="w-4 h-4 text-amber-400" />
           </button>
 
           {/* Quick PIN Lock (Hidden for Guest) */}
