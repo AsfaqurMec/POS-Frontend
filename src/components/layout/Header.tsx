@@ -185,7 +185,7 @@ export function Header() {
             type="button"
             onClick={() => {
               if (typeof window !== "undefined") {
-                window.open("/kds", "_blank", "noopener,noreferrer");
+                window.open("/kds-display", "_blank", "noopener,noreferrer");
               }
             }}
             className="p-1.5 rounded-xl bg-[#251810] border border-[#382418] text-warmgray-300 hover:text-white transition flex items-center gap-1"
