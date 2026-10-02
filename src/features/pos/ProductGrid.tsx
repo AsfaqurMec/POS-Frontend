@@ -220,7 +220,7 @@ export function ProductGrid() {
               )}
             </div>
           ) : displayedItems && displayedItems.length > 0 ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-4 gap-2.5 sm:gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-5 gap-2.5 sm:gap-2">
               {displayedItems.map((item) => {
                 const name = lang === "ar" ? item.nameAr : item.nameEn;
                 const hasOptions = item.variationMode === "OPTION";

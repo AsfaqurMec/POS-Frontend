@@ -110,7 +110,7 @@ export default function AdminDashboardPage() {
   };
 
   return (
-    <div className="p-4 sm:p-6 max-w-7xl w-full mx-auto space-y-6 min-h-full pb-20">
+    <div className="p-4 sm:p-6 max-w-7xl w-full mx-auto space-y-6 pb-8">
       {/* 1. Header Bar with Period Switcher */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-warmgray-900 border border-warmgray-200 dark:border-warmgray-800 p-5 rounded-2xl shadow-sm">
         <div>

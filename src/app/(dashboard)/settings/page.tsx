@@ -263,7 +263,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="p-4 sm:p-6 max-w-4xl w-full mx-auto space-y-6 min-h-full pb-20">
+    <div className="p-4 sm:p-6 max-w-7xl w-full mx-auto space-y-6 pb-8">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-black text-warmgray-900 dark:text-white tracking-tight">

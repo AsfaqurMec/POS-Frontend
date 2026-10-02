@@ -132,7 +132,7 @@ export default function CategoriesPage() {
   const ArrowIcon = dir === "rtl" ? ArrowLeft : ArrowRight;
 
   return (
-    <div className="p-4 sm:p-6 max-w-7xl w-full mx-auto space-y-6 min-h-full pb-16 bg-[#F7F3EE]">
+    <div className="p-4 sm:p-6 max-w-7xl w-full mx-auto space-y-6 pb-8 bg-[#F7F3EE]">
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>

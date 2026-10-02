@@ -148,7 +148,7 @@ export default function OrdersPage() {
 
 
   return (
-    <div className="p-4 sm:p-6 max-w-7xl w-full mx-auto space-y-6 min-h-full mb-20">
+    <div className="p-4 sm:p-6 max-w-7xl w-full mx-auto space-y-6 pb-8">
       {/* 1. Header & Title */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>

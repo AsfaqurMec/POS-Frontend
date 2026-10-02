@@ -76,7 +76,7 @@ export default function KdsPage() {
   );
 
   return (
-    <div className="p-4 sm:p-6 max-w-full mx-auto space-y-6 overflow-y-auto pb-16">
+    <div className="p-4 sm:p-6 max-w-full mx-auto space-y-6 pb-8">
       {/* Top Header Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-warmgray-900 border border-warmgray-200 dark:border-warmgray-800 p-5 rounded-3xl shadow-sm">
         <div className="flex items-center gap-3">
