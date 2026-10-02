@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { Providers } from "@/components/common/Providers";
+import NextTopLoader from "nextjs-toploader";
 
 export const viewport: Viewport = {
   themeColor: "#18110B",
@@ -68,6 +69,15 @@ export default function RootLayout({
   return (
     <html lang="en" dir="ltr" suppressHydrationWarning>
       <body className="h-screen w-screen overflow-hidden">
+        <NextTopLoader
+          color="#d97706"
+          height={3}
+          showSpinner={false}
+          shadow="0 0 10px #d97706, 0 0 5px #b45309"
+          easing="ease"
+          speed={200}
+          crawlSpeed={200}
+        />
         <Providers>{children}</Providers>
       </body>
     </html>
