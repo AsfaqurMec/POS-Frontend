@@ -158,3 +158,52 @@ export async function kickCashDrawer(): Promise<boolean> {
   }
   return false;
 }
+
+/**
+ * Direct raw ESC/POS printing to a USB/Serial thermal printer via Web Serial API.
+ * This sends raw bytes directly over the USB/Serial cable with ZERO browser popups.
+ */
+export async function printDirectWebSerial(
+  data: ReceiptPrintData,
+  requestNewPortIfNone = false
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    if (typeof navigator === "undefined" || !("serial" in navigator)) {
+      return {
+        success: false,
+        error: "Web Serial API is not supported in this browser. Please use Google Chrome or Microsoft Edge.",
+      };
+    }
+
+    const serial = (navigator as any).serial;
+    const ports = await serial.getPorts();
+    let port = ports.length > 0 ? ports[0] : null;
+
+    if (!port && requestNewPortIfNone) {
+      port = await serial.requestPort();
+    }
+
+    if (!port) {
+      return {
+        success: false,
+        error: "No paired USB/Serial printer found. Click 'Connect Printer' to pair once.",
+      };
+    }
+
+    await port.open({ baudRate: 9600 });
+    const writer = port.writable.getWriter();
+    const rawBytes = generateEscPosReceipt(data);
+    await writer.write(rawBytes);
+    writer.releaseLock();
+    await port.close();
+
+    return { success: true };
+  } catch (err: any) {
+    console.error("Direct ESC/POS print failed:", err);
+    return {
+      success: false,
+      error: err?.message || "Failed to communicate with printer port",
+    };
+  }
+}
+

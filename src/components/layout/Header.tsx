@@ -20,6 +20,7 @@ import {
   Maximize2,
   Minimize2,
   Download,
+  ScanBarcode,
 } from "lucide-react";
 import { useLangStore } from "@/store/langStore";
 import { useAuthStore } from "@/store/authStore";
@@ -27,12 +28,14 @@ import { usePosStore } from "@/store/posStore";
 import { useCartStore } from "@/store/cartStore";
 import { useThemeStore } from "@/store/themeStore";
 import { usePinStore } from "@/store/pinStore";
+import { useScannerStore } from "@/store/scannerStore";
 import { useDisplayMode } from "@/hooks/useDisplayMode";
 import { useBusiness, useCurrentShift } from "@/hooks/useQueries";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ManagerPinModal } from "../modals/ManagerPinModal";
 import { ShiftControlModal } from "../modals/ShiftControlModal";
+import { BarcodeScannerModal } from "../modals/BarcodeScannerModal";
 
 export function Header() {
   const { lang, toggleLang, t, dir } = useLangStore();
@@ -42,6 +45,7 @@ export function Header() {
   const { data: shiftData } = useCurrentShift();
   const { lockTerminal } = usePinStore();
   const { searchQuery, setSearchQuery, setMobileDrawerOpen } = usePosStore();
+  const { mode: scannerMode, setMode: setScannerMode, openScanner } = useScannerStore();
   const { orderType, setOrderType } = useCartStore();
   const {
     isFullscreen,
@@ -145,6 +149,41 @@ export function Header() {
 
         {/* Right Controls */}
         <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+          {/* Barcode Scanner (Product / Invoice) */}
+          <div className="flex items-center bg-[#251810] border border-[#382418] hover:border-amber-500/40 rounded-xl p-0.5 transition shadow-sm">
+            {/* Mode Selector Pill / Dropdown */}
+            <select
+              value={scannerMode}
+              onChange={(e) => setScannerMode(e.target.value as any)}
+              className="bg-transparent text-[11px] font-semibold text-amber-300 ps-2 pe-1 py-1 focus:outline-none cursor-pointer border-e border-[#382418] hover:text-amber-200 transition"
+              title={lang === "ar" ? "نوع المسح (منتج أو فاتورة)" : "Scanner Mode (Product or Invoice)"}
+            >
+              <option value="PRODUCT" className="bg-[#18110B] text-white">
+                {lang === "ar" ? "منتج" : "Product"}
+              </option>
+              <option value="INVOICE" className="bg-[#18110B] text-white">
+                {lang === "ar" ? "فاتورة" : "Invoice"}
+              </option>
+            </select>
+
+            {/* Scanner Button */}
+            <button
+              type="button"
+              onClick={() => openScanner(scannerMode)}
+              className="flex items-center gap-1.5 px-2 sm:px-2.5 py-1 text-xs font-bold text-warmgray-200 hover:text-white hover:bg-amber-600/20 rounded-lg transition active:scale-95"
+              title={
+                lang === "ar"
+                  ? `مسح باركود (${scannerMode === "PRODUCT" ? "منتج" : "فاتورة"})`
+                  : `Scan Barcode (${scannerMode === "PRODUCT" ? "Product" : "Invoice"})`
+              }
+            >
+              <ScanBarcode className="w-4 h-4 text-amber-400" />
+              <span className="hidden md:inline">
+                {lang === "ar" ? "مسح" : "Scan"}
+              </span>
+            </button>
+          </div>
+
           {/* Shift Drawer Button */}
           {/* Shift / Register Cash Controls (Hidden for Guest) */}
           {user?.role !== "GUEST" && (
@@ -305,6 +344,7 @@ export function Header() {
         isOpen={isShiftModalOpen}
         onClose={() => setIsShiftModalOpen(false)}
       />
+      <BarcodeScannerModal />
     </>
   );
 }

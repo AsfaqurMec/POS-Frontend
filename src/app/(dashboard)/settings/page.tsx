@@ -24,6 +24,8 @@ import {
   Trash2,
   AlertCircle,
   Loader2,
+  Printer,
+  Zap,
 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { getMediaUrl } from "@/lib/env";
@@ -53,6 +55,22 @@ export default function SettingsPage() {
   const [invoicePrefix, setInvoicePrefix] = useState("INV-");
   const [footerEn, setFooterEn] = useState("");
   const [footerAr, setFooterAr] = useState("");
+
+  // Thermal Printer & Auto-Print Settings (stored in localStorage)
+  const [autoPrintEnabled, setAutoPrintEnabled] = useState(true);
+
+  useEffect(() => {
+    const saved = localStorage.getItem("pos_auto_print");
+    if (saved !== null) {
+      setAutoPrintEnabled(saved === "true");
+    }
+  }, []);
+
+  const handleToggleAutoPrint = (checked: boolean) => {
+    setAutoPrintEnabled(checked);
+    localStorage.setItem("pos_auto_print", String(checked));
+  };
+
 
   // Tax Settings
   const [taxEnabled, setTaxEnabled] = useState(false);
@@ -452,6 +470,91 @@ export default function SettingsPage() {
                 onChange={(e) => setFooterAr(e.target.value)}
                 className="w-full px-3 py-2 bg-white dark:bg-warmgray-800 border border-warmgray-200 dark:border-warmgray-700 rounded-xl text-xs font-medium text-end"
               />
+            </div>
+          </div>
+        </div>
+
+        {/* Section 2.5: Thermal Receipt Printer & Silent Auto-Print */}
+        <div className="bg-white dark:bg-warmgray-900 rounded-3xl p-6 border border-warmgray-200 dark:border-warmgray-800 shadow-sm space-y-4">
+          <div className="flex items-center justify-between border-b border-warmgray-100 dark:border-warmgray-800 pb-3">
+            <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400 font-bold text-sm">
+              <Printer className="w-4 h-4" />
+              <span>{lang === "ar" ? "إعدادات الطابعة والطباعة التلقائية المباشرة" : "Thermal Printer & Direct Auto-Print"}</span>
+            </div>
+            <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300">
+              80mm / 58mm POS Ready
+            </span>
+          </div>
+
+          <div className="space-y-4">
+            {/* Auto Print Toggle */}
+            <div className="flex items-center justify-between p-4 rounded-2xl bg-warmgray-50 dark:bg-warmgray-800/60 border border-warmgray-200 dark:border-warmgray-700/60">
+              <div className="space-y-0.5 pe-4">
+                <div className="flex items-center gap-2">
+                  <Zap className="w-4 h-4 text-amber-600 shrink-0" />
+                  <span className="text-xs font-bold text-warmgray-900 dark:text-white">
+                    {lang === "ar" ? "طباعة الإيصال تلقائياً فور إتمام البيع" : "Auto-Print Receipt on Sale Completion"}
+                  </span>
+                </div>
+                <p className="text-[11px] text-warmgray-500 dark:text-warmgray-400">
+                  {lang === "ar"
+                    ? "عند إتمام الدفع بنجاح، يتم إرسال أمر الطباعة تلقائياً دون الحاجة للضغط على زر طباعة"
+                    : "Automatically triggers the print command when checkout succeeds, without requiring an extra click"}
+                </p>
+              </div>
+
+              <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                <input
+                  type="checkbox"
+                  checked={autoPrintEnabled}
+                  onChange={(e) => handleToggleAutoPrint(e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-warmgray-300 peer-focus:outline-none rounded-full peer dark:bg-warmgray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-600"></div>
+              </label>
+            </div>
+
+            {/* Silent Printing Mode Instructions Box */}
+            <div className="p-4 rounded-2xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 space-y-2.5">
+              <div className="flex items-center gap-1.5 text-xs font-bold text-amber-900 dark:text-amber-300">
+                <Sparkles className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                <span>{lang === "ar" ? "كيفية تفعيل الطباعة الفورية بدون ظهور نافذة المتصفح (Silent Printing)" : "How to Print Directly Without Browser Popups (Silent Printing)"}</span>
+              </div>
+              <p className="text-[11px] text-warmgray-700 dark:text-warmgray-300 leading-relaxed">
+                {lang === "ar"
+                  ? "المتصفحات تعرض نافذة تأكيد الطباعة افتراضياً لأسباب أمنية. لتخطي النافذة نهائياً والطباعة مباشرة وبسرعة فائقة:"
+                  : "Web browsers show a print preview popup by default. To skip the popup completely and print instantly:"}
+              </p>
+              <ol className="list-decimal list-inside text-[11px] text-warmgray-700 dark:text-warmgray-300 space-y-1 font-medium">
+                <li>
+                  {lang === "ar"
+                    ? "تأكد من تعيين طابعة الإيصالات الحرارية كطابعة افتراضية (Default Printer) في نظام ويندوز."
+                    : "Set your thermal receipt printer as the Windows Default Printer in Windows Settings."}
+                </li>
+                <li>
+                  {lang === "ar"
+                    ? "شغل المتصفح عبر الملف المرفق في مجلد المشروع "
+                    : "Launch Google Chrome or Microsoft Edge using "}
+                  <code className="bg-amber-100 dark:bg-amber-900/60 text-amber-900 dark:text-amber-200 px-1 py-0.5 rounded font-mono font-bold text-[10px]">
+                    launch-pos-silent-print.bat
+                  </code>
+                  {lang === "ar" ? " أو باستخدام وسيط " : " or the flag "}
+                  <code className="bg-amber-100 dark:bg-amber-900/60 text-amber-900 dark:text-amber-200 px-1 py-0.5 rounded font-mono font-bold text-[10px]">
+                    --kiosk-printing
+                  </code>
+                </li>
+              </ol>
+
+              <div className="pt-1 flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  className="px-3 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm transition active:scale-95"
+                >
+                  <Printer className="w-3.5 h-3.5" />
+                  <span>{lang === "ar" ? "تجربة الطباعة الآن" : "Test Print Now"}</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>

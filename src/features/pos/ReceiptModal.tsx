@@ -1,11 +1,13 @@
 "use client";
 
-import React, { useRef } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { usePosStore } from "@/store/posStore";
 import { useLangStore } from "@/store/langStore";
 import { useBusiness } from "@/hooks/useQueries";
 import { getMediaUrl } from "@/lib/env";
-import { Printer, CheckCircle, X, Coffee } from "lucide-react";
+import { Printer, CheckCircle, X, Coffee, Zap, Usb } from "lucide-react";
+import { printDirectWebSerial, ReceiptPrintData } from "@/lib/escpos";
+
 
 // Realistic SVG Barcode that is 100% vector-based and guaranteed to print on all browsers and thermal printers
 function ReceiptBarcode({ value }: { value: string }) {
@@ -74,13 +76,110 @@ export function ReceiptModal() {
   const { data: globalBusiness } = useBusiness();
   const receiptRef = useRef<HTMLDivElement>(null);
 
+  // Auto-Print state from localStorage (default: true)
+  const [autoPrint, setAutoPrint] = useState<boolean>(true);
+  const [isPrinting, setIsPrinting] = useState<boolean>(false);
+  const [usbPrintStatus, setUsbPrintStatus] = useState<string | null>(null);
+  const hasAutoPrintedRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    const saved = localStorage.getItem("pos_auto_print");
+    if (saved !== null) {
+      setAutoPrint(saved === "true");
+    }
+  }, []);
+
+  const toggleAutoPrint = () => {
+    const newVal = !autoPrint;
+    setAutoPrint(newVal);
+    localStorage.setItem("pos_auto_print", String(newVal));
+  };
+
+  const handlePrint = () => {
+    setIsPrinting(true);
+    try {
+      window.print();
+    } catch (e) {
+      console.error("Print error:", e);
+    } finally {
+      setTimeout(() => setIsPrinting(false), 1200);
+    }
+  };
+
+  // Automatically trigger print when modal opens if autoPrint is enabled
+  useEffect(() => {
+    if (isReceiptModalOpen && lastCompletedSale?.sale?.id) {
+      const saleId = lastCompletedSale.sale.id;
+      if (autoPrint && hasAutoPrintedRef.current !== saleId) {
+        hasAutoPrintedRef.current = saleId;
+        const timer = setTimeout(() => {
+          handlePrint();
+        }, 350);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [isReceiptModalOpen, lastCompletedSale, autoPrint]);
+
+  // Direct USB / Serial ESC-POS Printing (Zero Dialogs)
+  const handleDirectUsbPrint = async () => {
+    if (!lastCompletedSale) return;
+    setUsbPrintStatus("connecting...");
+    try {
+      const { sale, invoice, business: saleBiz } = lastCompletedSale;
+      const bName =
+        lang === "ar"
+          ? saleBiz?.nameAr || saleBiz?.nameEn || globalBusiness?.nameAr || globalBusiness?.nameEn || ""
+          : saleBiz?.nameEn || saleBiz?.nameAr || globalBusiness?.nameEn || globalBusiness?.nameAr || "";
+      const bAddr =
+        lang === "ar"
+          ? saleBiz?.addressAr || saleBiz?.addressEn || globalBusiness?.addressAr || globalBusiness?.addressEn
+          : saleBiz?.addressEn || saleBiz?.addressAr || globalBusiness?.addressEn || globalBusiness?.addressAr;
+
+      const printData: ReceiptPrintData = {
+        businessName: bName || "Specialty Coffee",
+        phone: saleBiz?.phone || globalBusiness?.phone || undefined,
+        address: bAddr || undefined,
+        orderNumber: sale.orderNumber || invoice.invoiceNumber.replace("INV-", "ORD-"),
+        invoiceNumber: invoice.invoiceNumber,
+        cashierName: sale.user?.name || invoice.cashierName || "Staff",
+        date: invoice.issueDate,
+        time: invoice.issueTime,
+        orderType: sale.orderType || "DINE_IN",
+        items: (sale.items || []).map((it) => ({
+          name: lang === "ar" ? it.itemNameArSnapshot : it.itemNameEnSnapshot,
+          qty: it.quantity,
+          price: it.unitPrice,
+          total: (it as any).totalPrice ?? it.lineTotal ?? (it.quantity * it.unitPrice),
+          options: (it.options || []).map((o: any) =>
+            typeof o === "string" ? o : `${o.name || ""}: ${o.value || ""}`
+          ),
+        })),
+        subtotal: invoice.subtotal,
+        discount: invoice.discount || 0,
+        tax: invoice.tax || 0,
+        total: invoice.totalAmount,
+        paymentMethod: invoice.paymentMethod,
+        currency: t.common.sar || saleBiz?.currency || "SAR",
+        footer: (lang === "ar" ? saleBiz?.receiptFooterAr : saleBiz?.receiptFooterEn) || t.receipt.thankYou,
+      };
+
+      const res = await printDirectWebSerial(printData, true);
+      if (res.success) {
+        setUsbPrintStatus("Printed!");
+        setTimeout(() => setUsbPrintStatus(null), 3000);
+      } else {
+        setUsbPrintStatus("Error: " + (res.error || "Failed"));
+        setTimeout(() => setUsbPrintStatus(null), 4000);
+      }
+    } catch (err: any) {
+      setUsbPrintStatus("Failed");
+      setTimeout(() => setUsbPrintStatus(null), 4000);
+    }
+  };
+
   if (!isReceiptModalOpen || !lastCompletedSale) return null;
 
   const { sale, invoice, business } = lastCompletedSale;
-
-  const handlePrint = () => {
-    window.print();
-  };
 
   const businessName =
     lang === "ar"
@@ -121,22 +220,37 @@ export function ReceiptModal() {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="bg-white dark:bg-warmgray-900 rounded-3xl max-w-sm w-full max-h-[92vh] flex flex-col shadow-2xl border border-warmgray-200 dark:border-warmgray-800 overflow-hidden">
         {/* Modal Top Bar */}
-        <div className="px-5 py-3.5 border-b border-warmgray-200 dark:border-warmgray-800 flex items-center justify-between shrink-0 bg-emerald-50 dark:bg-emerald-950/40">
+        <div className="px-5 py-3 border-b border-warmgray-200 dark:border-warmgray-800 flex items-center justify-between shrink-0 bg-emerald-50 dark:bg-emerald-950/40">
           <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400">
-            <CheckCircle className="w-5 h-5" />
+            <CheckCircle className="w-5 h-5 shrink-0" />
             <div>
-              <span className="font-bold text-sm block">{t.pos.saleSuccess}</span>
+              <span className="font-bold text-xs block">{t.pos.saleSuccess}</span>
               <span className="text-[11px] font-mono font-bold text-emerald-800 dark:text-emerald-300">
                 {sale.orderNumber || invoice.invoiceNumber.replace("INV-", "ORD-")}
               </span>
             </div>
           </div>
-          <button
-            onClick={closeReceiptModal}
-            className="p-1.5 text-warmgray-500 hover:text-warmgray-800 dark:text-warmgray-400 rounded-full"
-          >
-            <X className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={toggleAutoPrint}
+              title={autoPrint ? "Auto-print is enabled" : "Auto-print is disabled"}
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold transition shadow-sm ${
+                autoPrint
+                  ? "bg-amber-100 text-amber-900 dark:bg-amber-950/80 dark:text-amber-300 border border-amber-300"
+                  : "bg-white text-gray-500 dark:bg-warmgray-800 dark:text-warmgray-400 border border-warmgray-200"
+              }`}
+            >
+              <Zap className={`w-3 h-3 ${autoPrint ? "text-amber-600 fill-amber-500" : "text-gray-400"}`} />
+              <span>{autoPrint ? "Auto: ON" : "Auto: OFF"}</span>
+            </button>
+            <button
+              onClick={closeReceiptModal}
+              className="p-1.5 text-warmgray-500 hover:text-warmgray-800 dark:text-warmgray-400 rounded-full"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
         {/* Printable Thermal Receipt Container */}
@@ -346,22 +460,42 @@ export function ReceiptModal() {
         </div>
 
         {/* Modal Actions */}
-        <div className="p-4 border-t border-warmgray-200 dark:border-warmgray-800 bg-white dark:bg-warmgray-900 shrink-0 flex gap-2">
-          <button
-            type="button"
-            onClick={closeReceiptModal}
-            className="flex-1 py-2.5 rounded-xl text-xs font-bold border border-warmgray-300 dark:border-warmgray-700 text-warmgray-700 dark:text-warmgray-200 hover:bg-warmgray-100 dark:hover:bg-warmgray-800 transition"
-          >
-            {t.receipt.close}
-          </button>
-          <button
-            type="button"
-            onClick={handlePrint}
-            className="flex-1 py-2.5 rounded-xl text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white flex items-center justify-center gap-1.5 shadow-md shadow-amber-900/20 active:scale-95 transition"
-          >
-            <Printer className="w-4 h-4" />
-            <span>{t.receipt.print}</span>
-          </button>
+        <div className="p-3.5 border-t border-warmgray-200 dark:border-warmgray-800 bg-white dark:bg-warmgray-900 shrink-0 space-y-2">
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={closeReceiptModal}
+              className="flex-1 py-2.5 rounded-xl text-xs font-bold border border-warmgray-300 dark:border-warmgray-700 text-warmgray-700 dark:text-warmgray-200 hover:bg-warmgray-100 dark:hover:bg-warmgray-800 transition"
+            >
+              {t.receipt.close}
+            </button>
+            <button
+              type="button"
+              onClick={handlePrint}
+              disabled={isPrinting}
+              className="flex-1 py-2.5 rounded-xl text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white flex items-center justify-center gap-1.5 shadow-md shadow-amber-900/20 active:scale-95 transition disabled:opacity-75"
+            >
+              <Printer className="w-4 h-4" />
+              <span>{isPrinting ? (lang === "ar" ? "جارٍ الطباعة..." : "Printing...") : t.receipt.print}</span>
+            </button>
+          </div>
+
+          {/* Quick Hardware Direct USB Print & Silent Info */}
+          <div className="flex items-center justify-between text-[10px] text-warmgray-500 dark:text-warmgray-400 pt-0.5 px-0.5">
+            <span className="truncate flex items-center gap-1 text-[10px]">
+              <span>⚡ {lang === "ar" ? "طباعة تلقائية بدون نوافذ:" : "Silent print:"}</span>
+              <span className="font-mono text-[9px] bg-warmgray-100 dark:bg-warmgray-800 text-warmgray-700 dark:text-warmgray-300 px-1 py-0.5 rounded">--kiosk-printing</span>
+            </span>
+            <button
+              type="button"
+              onClick={handleDirectUsbPrint}
+              className="shrink-0 flex items-center gap-1 text-amber-600 hover:text-amber-700 dark:text-amber-400 font-bold ml-2 underline underline-offset-2"
+              title="Direct hardware ESC/POS over USB"
+            >
+              <Usb className="w-3 h-3" />
+              <span>{usbPrintStatus || (lang === "ar" ? "طباعة USB مباشرة" : "Direct USB")}</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>
