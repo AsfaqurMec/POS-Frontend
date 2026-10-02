@@ -20,6 +20,8 @@ import {
   RefreshCw,
   Coffee,
   CheckCircle2,
+  Upload,
+  Info,
 } from "lucide-react";
 import { useScannerStore, ScannerMode } from "@/store/scannerStore";
 import { useLangStore } from "@/store/langStore";
@@ -80,8 +82,10 @@ export function BarcodeScannerModal() {
   const [activeTab, setActiveTab] = useState<"camera" | "manual">("camera");
 
   // Camera state
+  const [isCameraStarting, setIsCameraStarting] = useState(false);
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
+  const [cameraErrorType, setCameraErrorType] = useState<"permission" | "device" | "insecure" | "other" | null>(null);
   const [cameras, setCameras] = useState<Array<{ id: string; label: string }>>([]);
   const [selectedCameraIndex, setSelectedCameraIndex] = useState<number>(0);
   const [isTorchOn, setIsTorchOn] = useState(false);
@@ -101,17 +105,25 @@ export function BarcodeScannerModal() {
   const [invoiceResult, setInvoiceResult] = useState<InvoiceResultData | null>(null);
   const [addedSuccess, setAddedSuccess] = useState(false);
 
-  // Html5Qrcode instance reference
+  // Html5Qrcode instance reference & locks
   const html5QrCodeRef = useRef<any>(null);
+  const isOperatingRef = useRef<boolean>(false);
   const scannerContainerId = "reader-viewport";
   const lastProcessedTimeRef = useRef<number>(0);
   const manualInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Keep latest mode in a ref for callback
+  const modeRef = useRef<ScannerMode>(mode);
+  useEffect(() => {
+    modeRef.current = mode;
+  }, [mode]);
 
   const currency = business?.currency || "SAR";
 
   // Perform search / lookup on scanned code
   const handleProcessBarcode = useCallback(
-    async (codeToProcess: string, targetMode = mode) => {
+    async (codeToProcess: string, targetMode = modeRef.current) => {
       const code = codeToProcess.trim();
       if (!code) return;
 
@@ -196,7 +208,7 @@ export function BarcodeScannerModal() {
         setIsSearching(false);
       }
     },
-    [mode, lastScannedCode, t.scanner]
+    [lastScannedCode, t.scanner]
   );
 
   // Hardware Scanner Listener (USB / Bluetooth barcode scanner gun)
@@ -216,34 +228,127 @@ export function BarcodeScannerModal() {
         if (html5QrCodeRef.current.isScanning) {
           await html5QrCodeRef.current.stop();
         }
-        await html5QrCodeRef.current.clear();
       } catch {
         // Silently ignore stop errors
       }
+      try {
+        await html5QrCodeRef.current.clear();
+      } catch {}
       html5QrCodeRef.current = null;
     }
     setIsCameraActive(false);
+    setIsCameraStarting(false);
     setIsTorchOn(false);
     setHasTorch(false);
   }, []);
 
-  // Start camera function
+  // Start camera function with multiple fallbacks
   const startCamera = useCallback(
     async (cameraIndex = selectedCameraIndex) => {
+      if (isOperatingRef.current) return;
+      isOperatingRef.current = true;
+
+      setIsCameraStarting(true);
       setCameraError(null);
+      setCameraErrorType(null);
+
+      // Stop any existing session
       await stopCamera();
 
+      // Check browser environment & secure context
+      if (typeof window === "undefined" || !navigator?.mediaDevices?.getUserMedia) {
+        if (typeof window !== "undefined" && window.isSecureContext === false) {
+          setCameraError(
+            "Camera requires HTTPS or localhost. If testing from mobile or another device, please access via HTTPS or localhost."
+          );
+          setCameraErrorType("insecure");
+        } else {
+          setCameraError(
+            "Your browser or device does not support camera access. Please use manual entry or a USB barcode scanner."
+          );
+          setCameraErrorType("device");
+        }
+        setIsCameraStarting(false);
+        isOperatingRef.current = false;
+        return;
+      }
+
+      // Ensure container element is mounted in DOM
+      const container = document.getElementById(scannerContainerId);
+      if (!container) {
+        // Wait 120ms and try once
+        setTimeout(() => {
+          isOperatingRef.current = false;
+          startCamera(cameraIndex);
+        }, 120);
+        return;
+      }
+
+      // Step 1: Pre-request permission explicitly so browser triggers the standard "Allow Camera" dialog
+      let tempStream: MediaStream | null = null;
+      try {
+        tempStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: "environment" } },
+        });
+      } catch (firstErr: any) {
+        // If ideal environment failed, try generic video: true (useful on desktop/laptop webcams)
+        try {
+          tempStream = await navigator.mediaDevices.getUserMedia({ video: true });
+        } catch (err: any) {
+          console.error("Camera permission error:", err);
+          if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
+            setCameraError(
+              lang === "ar"
+                ? "تم حظر إذن الكاميرا. يرجى النقر على أيقونة القفل أو الكاميرا في شريط عنوان المتصفح للسماح بالكاميرا."
+                : "Camera access was denied. Please click the lock/camera icon in your browser address bar to allow camera access."
+            );
+            setCameraErrorType("permission");
+          } else if (err.name === "NotFoundError" || err.name === "DevicesNotFoundError") {
+            setCameraError(
+              lang === "ar"
+                ? "لم يتم العثور على كاميرا في هذا الجهاز."
+                : "No camera device found on this system."
+            );
+            setCameraErrorType("device");
+          } else if (err.name === "NotReadableError" || err.name === "TrackStartError") {
+            setCameraError(
+              lang === "ar"
+                ? "الكاميرا مستخدمة حالياً من قبل تطبيق آخر. يرجى إغلاق التطبيقات الأخرى وإعادة المحاولة."
+                : "Camera is in use by another application or browser tab. Please close other camera apps and retry."
+            );
+            setCameraErrorType("device");
+          } else {
+            setCameraError(
+              lang === "ar"
+                ? `تعذر تشغيل الكاميرا: ${err.message || "خطأ غير معروف"}`
+                : `Camera initialization failed: ${err.message || "Unknown error"}`
+            );
+            setCameraErrorType("other");
+          }
+          setIsCameraStarting(false);
+          isOperatingRef.current = false;
+          return;
+        }
+      }
+
+      // Stop temporary stream so Html5Qrcode can claim the camera without conflict
+      if (tempStream) {
+        tempStream.getTracks().forEach((track) => track.stop());
+      }
+
+      // Step 2: Initialize Html5Qrcode
       try {
         const { Html5Qrcode, Html5QrcodeSupportedFormats } = await import("html5-qrcode");
 
-        // Discover camera devices if not yet populated
+        // Enumerate camera devices
+        let devices: Array<{ id: string; label: string }> = [];
         try {
-          const devices = await Html5Qrcode.getCameras();
+          devices = await Html5Qrcode.getCameras();
           if (devices && devices.length > 0) {
             setCameras(devices);
           }
-        } catch {
-          // Camera permission might need to be requested first
+        } catch (devErr) {
+          console.warn("Could not enumerate camera devices:", devErr);
         }
 
         const qrCodeInstance = new Html5Qrcode(scannerContainerId, {
@@ -261,47 +366,79 @@ export function BarcodeScannerModal() {
 
         html5QrCodeRef.current = qrCodeInstance;
 
-        // Choose camera: by deviceId if available, else environment facingMode
-        let cameraConfig: any = { facingMode: { ideal: "environment" } };
-        if (cameras.length > 0 && cameras[cameraIndex]?.id) {
-          cameraConfig = { deviceId: { exact: cameras[cameraIndex].id } };
+        // Configurations to try in sequence of preference
+        const configsToTry: any[] = [];
+
+        // 1. If explicit device ID is chosen
+        if (devices.length > 0 && devices[cameraIndex]?.id) {
+          configsToTry.push({ deviceId: { exact: devices[cameraIndex].id } });
+        }
+        // 2. Rear camera (environment) - ideal for mobile phones
+        configsToTry.push({ facingMode: "environment" });
+        // 3. Front/webcam (user) - for laptops
+        configsToTry.push({ facingMode: "user" });
+        // 4. Any available video track
+        configsToTry.push(true);
+
+        let started = false;
+        for (const config of configsToTry) {
+          try {
+            await qrCodeInstance.start(
+              config,
+              {
+                fps: 15,
+                qrbox: (viewfinderWidth, viewfinderHeight) => {
+                  const width = Math.min(viewfinderWidth - 20, 280);
+                  const height = Math.min(viewfinderHeight - 20, 160);
+                  return { width, height };
+                },
+                aspectRatio: 1.3333,
+              },
+              (decodedText) => {
+                handleProcessBarcode(decodedText);
+              },
+              () => {
+                // scanning frame without barcode
+              }
+            );
+            started = true;
+            break;
+          } catch (tryErr) {
+            console.warn("Camera config failed, trying fallback...", tryErr);
+          }
         }
 
-        await qrCodeInstance.start(
-          cameraConfig,
-          {
-            fps: 15,
-            qrbox: { width: 280, height: 160 },
-            aspectRatio: 1.333,
-          },
-          (decodedText) => {
-            handleProcessBarcode(decodedText);
-          },
-          () => {
-            // Frame scanned without code
-          }
-        );
+        if (started) {
+          setIsCameraActive(true);
+          setCameraError(null);
+          setCameraErrorType(null);
 
-        setIsCameraActive(true);
-
-        // Check if torch/flashlight is supported
-        try {
-          const capabilities = qrCodeInstance.getRunningTrackCapabilities();
-          if (capabilities && (capabilities as any).torch) {
-            setHasTorch(true);
+          // Check if torch/flashlight is supported
+          try {
+            const capabilities = qrCodeInstance.getRunningTrackCapabilities();
+            if (capabilities && (capabilities as any).torch) {
+              setHasTorch(true);
+            }
+          } catch {
+            setHasTorch(false);
           }
-        } catch {
-          setHasTorch(false);
+        } else {
+          throw new Error("Unable to start video feed with any camera configuration.");
         }
       } catch (err: any) {
+        console.error("Html5Qrcode startup error:", err);
         setCameraError(
-          t.scanner.cameraPermissionDenied ||
-            "Camera access failed or was denied. You can still enter or scan codes manually."
+          lang === "ar"
+            ? `تعذر تشغيل ماسح الكاميرا: ${err.message || "يرجى التحقق من الأذونات"}`
+            : `Unable to open camera feed: ${err.message || "Please check camera permissions"}`
         );
         setIsCameraActive(false);
+      } finally {
+        setIsCameraStarting(false);
+        isOperatingRef.current = false;
       }
     },
-    [selectedCameraIndex, cameras, handleProcessBarcode, stopCamera, t.scanner]
+    [selectedCameraIndex, stopCamera, handleProcessBarcode, lang]
   );
 
   // Switch between available cameras
@@ -326,18 +463,50 @@ export function BarcodeScannerModal() {
     }
   };
 
-  // Start or stop camera based on modal open state and active tab
+  // Scan from photo / image file
+  const handleImageFileScan = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsSearching(true);
+    setSearchError(null);
+
+    try {
+      const { Html5Qrcode } = await import("html5-qrcode");
+      const tempScanner = html5QrCodeRef.current || new Html5Qrcode(scannerContainerId);
+      const decodedText = await tempScanner.scanFile(file, true);
+      handleProcessBarcode(decodedText);
+    } catch (err: any) {
+      setSearchError(
+        lang === "ar"
+          ? "لم يتم العثور على باركود صالح في الصورة المختارة."
+          : "No valid barcode found in the selected image. Please try a clearer photo."
+      );
+      setIsSearching(false);
+    } finally {
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
+
+  // Start camera on modal open (tab = camera)
   useEffect(() => {
+    let timer: NodeJS.Timeout | null = null;
     if (isOpen && activeTab === "camera" && !productResult && !invoiceResult) {
-      startCamera();
+      // Slight delay ensures modal transition and container element are fully in DOM
+      timer = setTimeout(() => {
+        startCamera();
+      }, 100);
     } else {
       stopCamera();
     }
 
     return () => {
+      if (timer) clearTimeout(timer);
       stopCamera();
     };
-  }, [isOpen, activeTab, productResult, invoiceResult, startCamera, stopCamera]);
+  }, [isOpen, activeTab, productResult, invoiceResult]); // Notice: startCamera/stopCamera intentionally omitted to avoid re-trigger loops
 
   // Focus manual input when manual tab is clicked
   useEffect(() => {
@@ -478,32 +647,56 @@ export function BarcodeScannerModal() {
 
         {/* Scanner View Controls (Camera / Manual Input) */}
         {!productResult && !invoiceResult && (
-          <div className="flex border-b border-[#281B12] text-xs font-semibold px-4 pt-2 shrink-0 bg-[#1A1009]">
-            <button
-              type="button"
-              onClick={() => setActiveTab("camera")}
-              className={`pb-2 pe-4 ps-1 border-b-2 flex items-center gap-1.5 transition ${
-                activeTab === "camera"
-                  ? "border-amber-500 text-amber-400"
-                  : "border-transparent text-warmgray-400 hover:text-white"
-              }`}
-            >
-              <Camera className="w-3.5 h-3.5" />
-              <span>{t.scanner.cameraScanner}</span>
-            </button>
+          <div className="flex border-b border-[#281B12] text-xs font-semibold px-4 pt-2 shrink-0 bg-[#1A1009] justify-between items-center">
+            <div className="flex gap-4">
+              <button
+                type="button"
+                onClick={() => setActiveTab("camera")}
+                className={`pb-2 ps-1 pe-2 border-b-2 flex items-center gap-1.5 transition ${
+                  activeTab === "camera"
+                    ? "border-amber-500 text-amber-400"
+                    : "border-transparent text-warmgray-400 hover:text-white"
+                }`}
+              >
+                <Camera className="w-3.5 h-3.5" />
+                <span>{t.scanner.cameraScanner}</span>
+              </button>
 
-            <button
-              type="button"
-              onClick={() => setActiveTab("manual")}
-              className={`pb-2 pe-4 ps-1 border-b-2 flex items-center gap-1.5 transition ${
-                activeTab === "manual"
-                  ? "border-amber-500 text-amber-400"
-                  : "border-transparent text-warmgray-400 hover:text-white"
-              }`}
-            >
-              <Search className="w-3.5 h-3.5" />
-              <span>{t.scanner.manualEntry}</span>
-            </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("manual")}
+                className={`pb-2 ps-1 pe-2 border-b-2 flex items-center gap-1.5 transition ${
+                  activeTab === "manual"
+                    ? "border-amber-500 text-amber-400"
+                    : "border-transparent text-warmgray-400 hover:text-white"
+                }`}
+              >
+                <Search className="w-3.5 h-3.5" />
+                <span>{t.scanner.manualEntry}</span>
+              </button>
+            </div>
+
+            {/* Quick Upload Image Scan */}
+            <div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleImageFileScan}
+              />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="text-[11px] pb-2 text-warmgray-400 hover:text-amber-300 flex items-center gap-1 transition"
+                title="Scan barcode from an image file or photo"
+              >
+                <Upload className="w-3 h-3" />
+                <span className="hidden xs:inline">
+                  {lang === "ar" ? "مسح من صورة" : "Upload Image"}
+                </span>
+              </button>
+            </div>
           </div>
         )}
 
@@ -760,7 +953,7 @@ export function BarcodeScannerModal() {
           {!productResult && !invoiceResult && activeTab === "camera" && (
             <div className="space-y-3">
               <div className="relative w-full rounded-2xl overflow-hidden bg-black aspect-[4/3] border border-[#3C271B] shadow-inner flex items-center justify-center">
-                {/* HTML5 QR Code Mount Node */}
+                {/* HTML5 QR Code Mount Node (Always in DOM) */}
                 <div id={scannerContainerId} className="w-full h-full object-cover" />
 
                 {/* Animated Aiming Reticle Overlay */}
@@ -827,24 +1020,60 @@ export function BarcodeScannerModal() {
                   </div>
                 )}
 
-                {/* Camera Permission / Error / Inactive State */}
-                {!isCameraActive && (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center space-y-3 bg-[#1C120B]">
+                {/* Starting Camera Loading State */}
+                {isCameraStarting && (
+                  <div className="absolute inset-0 bg-[#1C120B] flex flex-col items-center justify-center gap-3 z-10">
+                    <Loader2 className="w-8 h-8 text-amber-400 animate-spin" />
+                    <p className="text-xs text-warmgray-300 font-medium">
+                      {lang === "ar" ? "جاري تشغيل الكاميرا..." : "Starting camera..."}
+                    </p>
+                  </div>
+                )}
+
+                {/* Camera Inactive / Permission Prompt State */}
+                {!isCameraActive && !isCameraStarting && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center space-y-3 bg-[#1C120B] z-10">
                     <div className="w-12 h-12 rounded-full bg-[#2A180E] border border-[#3E2315] flex items-center justify-center text-amber-400">
                       <Camera className="w-6 h-6" />
                     </div>
+
                     {cameraError ? (
-                      <p className="text-xs text-red-300 max-w-xs">{cameraError}</p>
+                      <div className="space-y-1.5 max-w-xs">
+                        <p className="text-xs font-semibold text-red-300">{cameraError}</p>
+                        {cameraErrorType === "permission" && (
+                          <p className="text-[11px] text-amber-300/90 bg-amber-950/40 p-2 rounded-lg border border-amber-500/20">
+                            {lang === "ar"
+                              ? "انقر على أيقونة الكاميرا في شريط عنوان المتصفح، اختر 'السماح دائماً'، ثم انقر إعادة المحاولة."
+                              : "Click the lock or camera icon in your browser address bar, set Camera to 'Allow', then click Retry."}
+                          </p>
+                        )}
+                        {cameraErrorType === "insecure" && (
+                          <p className="text-[11px] text-amber-300/90 bg-amber-950/40 p-2 rounded-lg border border-amber-500/20">
+                            Open via <code className="text-white font-mono">http://localhost:3001</code> or use an HTTPS tunnel.
+                          </p>
+                        )}
+                      </div>
                     ) : (
                       <p className="text-xs text-warmgray-400 max-w-xs">{t.scanner.pointingTip}</p>
                     )}
-                    <button
-                      type="button"
-                      onClick={() => startCamera()}
-                      className="px-4 py-2 rounded-xl text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white shadow-md transition"
-                    >
-                      {t.scanner.startCamera}
-                    </button>
+
+                    <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => startCamera()}
+                        className="px-4 py-2 rounded-xl text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white shadow-md transition active:scale-95"
+                      >
+                        {cameraError ? (lang === "ar" ? "إعادة محاولة فتح الكاميرا" : "Retry Camera") : t.scanner.startCamera}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="px-3 py-2 rounded-xl text-xs font-semibold border border-[#3C271B] text-warmgray-300 hover:text-white hover:bg-[#281A12] transition"
+                      >
+                        {lang === "ar" ? "مسح من صورة" : "Scan Image File"}
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
@@ -856,7 +1085,7 @@ export function BarcodeScannerModal() {
           )}
 
           {/* 5. MANUAL / HARDWARE SCANNER INPUT TAB */}
-          {!productResult && !invoiceResult && (
+          {!productResult && !invoiceResult && activeTab === "manual" && (
             <div className="space-y-3">
               <form onSubmit={handleManualSubmit} className="space-y-2">
                 <label className="text-xs font-semibold text-warmgray-300 block">

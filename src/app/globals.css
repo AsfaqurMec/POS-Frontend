@@ -83,3 +83,30 @@
     margin: 0;
   }
 }
+
+/* Barcode Scanner Viewport Styling */
+#reader-viewport {
+  width: 100% !important;
+  height: 100% !important;
+  border: none !important;
+  overflow: hidden;
+}
+
+#reader-viewport video {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  border-radius: 0.75rem !important;
+}
+
+#reader-viewport img[alt="Info icon"] {
+  display: none !important;
+}
+
+#reader-viewport__scan_region {
+  background: transparent !important;
+}
+
+#reader-viewport__dashboard_section {
+  display: none !important;
+}
