@@ -47,7 +47,7 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="flex-1 flex flex-col p-6 overflow-y-auto max-w-xl w-full mx-auto space-y-6">
+    <div className="flex-1 flex flex-col p-6 overflow-y-auto max-w-xl w-full mx-auto space-y-6 pb-16">
       <div>
         <h1 className="text-2xl font-black text-warmgray-900 dark:text-white tracking-tight">
           {t.nav.profile}
