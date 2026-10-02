@@ -9,63 +9,36 @@ import { Printer, CheckCircle, X, Coffee, Zap, Usb } from "lucide-react";
 import { printDirectWebSerial, ReceiptPrintData } from "@/lib/escpos";
 
 
-// Realistic SVG Barcode that is 100% vector-based and guaranteed to print on all browsers and thermal printers
-function ReceiptBarcode({ value }: { value: string }) {
-  const pattern = React.useMemo(() => {
-    const bars: { width: number; isSpace: boolean }[] = [];
-    // Start guard pattern
-    bars.push({ width: 2, isSpace: false }, { width: 1, isSpace: true }, { width: 2, isSpace: false }, { width: 1, isSpace: true });
+import JsBarcode from "jsbarcode";
 
-    const str = value || "INV-000100";
-    for (let i = 0; i < str.length; i++) {
-      const code = str.charCodeAt(i);
-      const b1 = (code % 3) + 1;
-      const s1 = ((code >> 1) % 2) + 1;
-      const b2 = ((code >> 2) % 3) + 1;
-      const s2 = ((code >> 3) % 2) + 1;
-      bars.push(
-        { width: b1, isSpace: false },
-        { width: s1, isSpace: true },
-        { width: b2, isSpace: false },
-        { width: s2, isSpace: true }
-      );
+// 100% compliant ISO/IEC 15417 Code 128 vector barcode
+function ReceiptBarcode({ value }: { value: string }) {
+  const svgRef = useRef<SVGSVGElement>(null);
+
+  useEffect(() => {
+    if (svgRef.current && value) {
+      try {
+        JsBarcode(svgRef.current, value.trim(), {
+          format: "CODE128",
+          lineColor: "#000000",
+          width: 1.6,
+          height: 42,
+          displayValue: true,
+          font: "monospace",
+          fontSize: 11,
+          textMargin: 4,
+          margin: 4,
+          background: "transparent",
+        });
+      } catch (err) {
+        console.error("Barcode generation error:", err);
+      }
     }
-    // Stop guard pattern
-    bars.push({ width: 2, isSpace: false }, { width: 1, isSpace: true }, { width: 3, isSpace: false });
-    return bars;
   }, [value]);
 
-  let currentX = 0;
-  const totalWidth = pattern.reduce((acc, bar) => acc + bar.width, 0);
-
   return (
-    <div className="flex flex-col items-center justify-center space-y-1 py-1">
-      <svg
-        className="w-48 h-9 max-w-full text-black block"
-        viewBox={`0 0 ${totalWidth} 36`}
-        preserveAspectRatio="none"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        {pattern.map((bar, idx) => {
-          const x = currentX;
-          currentX += bar.width;
-          if (bar.isSpace) return null;
-          return (
-            <rect
-              key={idx}
-              x={x}
-              y={0}
-              width={bar.width}
-              height={36}
-              fill="#000000"
-              style={{ shapeRendering: "crispEdges" }}
-            />
-          );
-        })}
-      </svg>
-      <span className="text-[10px] font-mono tracking-widest text-black font-semibold">
-        *{value}*
-      </span>
+    <div className="flex flex-col items-center justify-center py-1">
+      <svg ref={svgRef} className="max-w-full h-auto block mx-auto" />
     </div>
   );
 }

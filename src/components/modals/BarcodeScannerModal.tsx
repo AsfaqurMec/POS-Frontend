@@ -21,7 +21,6 @@ import {
   Coffee,
   CheckCircle2,
   Upload,
-  Info,
 } from "lucide-react";
 import { useScannerStore, ScannerMode } from "@/store/scannerStore";
 import { useLangStore } from "@/store/langStore";
@@ -108,6 +107,8 @@ export function BarcodeScannerModal() {
   // Html5Qrcode instance reference & locks
   const html5QrCodeRef = useRef<any>(null);
   const isOperatingRef = useRef<boolean>(false);
+  const nativeDetectorRef = useRef<any>(null);
+  const nativeIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const scannerContainerId = "reader-viewport";
   const lastProcessedTimeRef = useRef<number>(0);
   const manualInputRef = useRef<HTMLInputElement>(null);
@@ -121,7 +122,7 @@ export function BarcodeScannerModal() {
 
   const currency = business?.currency || "SAR";
 
-  // Perform search / lookup on scanned code
+  // Perform search / lookup on scanned code with smart auto-fallback
   const handleProcessBarcode = useCallback(
     async (codeToProcess: string, targetMode = modeRef.current) => {
       const code = codeToProcess.trim();
@@ -143,20 +144,40 @@ export function BarcodeScannerModal() {
 
       playScanSound();
 
+      const upperCode = code.toUpperCase();
+      const isExplicitInvoice = upperCode.startsWith("INV-") || upperCode.startsWith("ORD-");
+
+      // Smart Order of Lookups:
+      // If code starts with INV-/ORD- or mode is INVOICE, check invoice first. Otherwise, check product first.
+      const shouldCheckInvoiceFirst = isExplicitInvoice || targetMode === "INVOICE";
+
       try {
-        if (targetMode === "PRODUCT") {
+        if (shouldCheckInvoiceFirst) {
+          // 1. Try Invoice Lookup
+          try {
+            const res = await api.get<{ invoice: any; business?: any }>(
+              `/invoices/${encodeURIComponent(code)}`
+            );
+            if (res && res.invoice) {
+              setMode("INVOICE");
+              setInvoiceResult(res);
+              setIsSearching(false);
+              return;
+            }
+          } catch {
+            // Invoice lookup failed; will try product lookup below
+          }
+
+          // 2. Fallback to Product Lookup
           const items = await api.get<Item[]>(`/items?search=${encodeURIComponent(code)}`);
           if (items && items.length > 0) {
             const lowerCode = code.toLowerCase();
-            // Prioritize exact barcode or SKU match
             let matchedItem = items.find(
               (i) =>
                 (i.barcode && i.barcode.toLowerCase() === lowerCode) ||
                 (i.sku && i.sku.toLowerCase() === lowerCode)
             );
             let matchedVariant: ProductVariant | null = null;
-
-            // Check variant barcodes if item not matched directly
             if (!matchedItem) {
               for (const itm of items) {
                 const variant = itm.variants?.find(
@@ -171,44 +192,79 @@ export function BarcodeScannerModal() {
                 }
               }
             }
+            if (!matchedItem) matchedItem = items[0];
 
-            // Fallback to first item returned
-            if (!matchedItem) {
-              matchedItem = items[0];
-            }
-
+            setMode("PRODUCT");
             setProductResult({ item: matchedItem, matchedVariant });
-          } else {
-            setSearchError(t.scanner.noProductFound || "No product found matching this barcode.");
+            setIsSearching(false);
+            return;
           }
-        } else {
-          // INVOICE MODE
-          const res = await api.get<{ invoice: any; business?: any }>(
-            `/invoices/${encodeURIComponent(code)}`
+
+          setSearchError(
+            t.scanner.noInvoiceFound || `No invoice or item found matching code: ${code}`
           );
-          if (res && res.invoice) {
-            setInvoiceResult(res);
-          } else {
-            setSearchError(
-              t.scanner.noInvoiceFound || "No invoice found matching this barcode / invoice number."
-            );
+        } else {
+          // Check Product first
+          try {
+            const items = await api.get<Item[]>(`/items?search=${encodeURIComponent(code)}`);
+            if (items && items.length > 0) {
+              const lowerCode = code.toLowerCase();
+              let matchedItem = items.find(
+                (i) =>
+                  (i.barcode && i.barcode.toLowerCase() === lowerCode) ||
+                  (i.sku && i.sku.toLowerCase() === lowerCode)
+              );
+              let matchedVariant: ProductVariant | null = null;
+
+              if (!matchedItem) {
+                for (const itm of items) {
+                  const variant = itm.variants?.find(
+                    (v) =>
+                      (v.barcode && v.barcode.toLowerCase() === lowerCode) ||
+                      (v.sku && v.sku.toLowerCase() === lowerCode)
+                  );
+                  if (variant) {
+                    matchedItem = itm;
+                    matchedVariant = variant;
+                    break;
+                  }
+                }
+              }
+
+              if (!matchedItem) matchedItem = items[0];
+
+              setProductResult({ item: matchedItem, matchedVariant });
+              setIsSearching(false);
+              return;
+            }
+          } catch {
+            // Product search failed
           }
+
+          // Fallback to Invoice Lookup if product wasn't found
+          try {
+            const res = await api.get<{ invoice: any; business?: any }>(
+              `/invoices/${encodeURIComponent(code)}`
+            );
+            if (res && res.invoice) {
+              setMode("INVOICE");
+              setInvoiceResult(res);
+              setIsSearching(false);
+              return;
+            }
+          } catch {}
+
+          setSearchError(
+            t.scanner.noProductFound || `No product found matching barcode: ${code}`
+          );
         }
       } catch (err: any) {
-        if (targetMode === "INVOICE") {
-          setSearchError(
-            t.scanner.noInvoiceFound || "No invoice found matching this barcode / invoice number."
-          );
-        } else {
-          setSearchError(
-            t.scanner.noProductFound || "No product found matching this barcode."
-          );
-        }
+        setSearchError(`Lookup failed: ${err.message || "Unknown error"}`);
       } finally {
         setIsSearching(false);
       }
     },
-    [lastScannedCode, t.scanner]
+    [lastScannedCode, setMode, t.scanner]
   );
 
   // Hardware Scanner Listener (USB / Bluetooth barcode scanner gun)
@@ -223,14 +279,16 @@ export function BarcodeScannerModal() {
 
   // Stop camera function
   const stopCamera = useCallback(async () => {
+    if (nativeIntervalRef.current) {
+      clearInterval(nativeIntervalRef.current);
+      nativeIntervalRef.current = null;
+    }
     if (html5QrCodeRef.current) {
       try {
         if (html5QrCodeRef.current.isScanning) {
           await html5QrCodeRef.current.stop();
         }
-      } catch {
-        // Silently ignore stop errors
-      }
+      } catch {}
       try {
         await html5QrCodeRef.current.clear();
       } catch {}
@@ -242,7 +300,7 @@ export function BarcodeScannerModal() {
     setHasTorch(false);
   }, []);
 
-  // Start camera function with multiple fallbacks
+  // Start camera function with native BarcodeDetector & fallback
   const startCamera = useCallback(
     async (cameraIndex = selectedCameraIndex) => {
       if (isOperatingRef.current) return;
@@ -276,7 +334,6 @@ export function BarcodeScannerModal() {
       // Ensure container element is mounted in DOM
       const container = document.getElementById(scannerContainerId);
       if (!container) {
-        // Wait 120ms and try once
         setTimeout(() => {
           isOperatingRef.current = false;
           startCamera(cameraIndex);
@@ -290,8 +347,7 @@ export function BarcodeScannerModal() {
         tempStream = await navigator.mediaDevices.getUserMedia({
           video: { facingMode: { ideal: "environment" } },
         });
-      } catch (firstErr: any) {
-        // If ideal environment failed, try generic video: true (useful on desktop/laptop webcams)
+      } catch {
         try {
           tempStream = await navigator.mediaDevices.getUserMedia({ video: true });
         } catch (err: any) {
@@ -336,7 +392,7 @@ export function BarcodeScannerModal() {
         tempStream.getTracks().forEach((track) => track.stop());
       }
 
-      // Step 2: Initialize Html5Qrcode
+      // Step 2: Initialize Html5Qrcode with all barcode formats + native BarcodeDetector
       try {
         const { Html5Qrcode, Html5QrcodeSupportedFormats } = await import("html5-qrcode");
 
@@ -354,30 +410,30 @@ export function BarcodeScannerModal() {
         const qrCodeInstance = new Html5Qrcode(scannerContainerId, {
           formatsToSupport: [
             Html5QrcodeSupportedFormats.CODE_128,
+            Html5QrcodeSupportedFormats.CODE_39,
+            Html5QrcodeSupportedFormats.CODE_93,
             Html5QrcodeSupportedFormats.EAN_13,
             Html5QrcodeSupportedFormats.EAN_8,
             Html5QrcodeSupportedFormats.UPC_A,
             Html5QrcodeSupportedFormats.UPC_E,
-            Html5QrcodeSupportedFormats.CODE_39,
             Html5QrcodeSupportedFormats.QR_CODE,
+            Html5QrcodeSupportedFormats.DATA_MATRIX,
           ],
           verbose: false,
+          experimentalFeatures: {
+            useBarCodeDetectorIfSupported: true,
+          },
         });
 
         html5QrCodeRef.current = qrCodeInstance;
 
         // Configurations to try in sequence of preference
         const configsToTry: any[] = [];
-
-        // 1. If explicit device ID is chosen
         if (devices.length > 0 && devices[cameraIndex]?.id) {
           configsToTry.push({ deviceId: { exact: devices[cameraIndex].id } });
         }
-        // 2. Rear camera (environment) - ideal for mobile phones
         configsToTry.push({ facingMode: "environment" });
-        // 3. Front/webcam (user) - for laptops
         configsToTry.push({ facingMode: "user" });
-        // 4. Any available video track
         configsToTry.push(true);
 
         let started = false;
@@ -386,20 +442,21 @@ export function BarcodeScannerModal() {
             await qrCodeInstance.start(
               config,
               {
-                fps: 15,
+                fps: 20,
+                // Generous scanning area so barcodes anywhere in the frame are detected
                 qrbox: (viewfinderWidth, viewfinderHeight) => {
-                  const width = Math.min(viewfinderWidth - 20, 280);
-                  const height = Math.min(viewfinderHeight - 20, 160);
+                  const width = Math.max(260, Math.floor(viewfinderWidth * 0.9));
+                  const height = Math.max(160, Math.floor(viewfinderHeight * 0.75));
                   return { width, height };
                 },
                 aspectRatio: 1.3333,
               },
               (decodedText) => {
-                handleProcessBarcode(decodedText);
+                if (decodedText) {
+                  handleProcessBarcode(decodedText);
+                }
               },
-              () => {
-                // scanning frame without barcode
-              }
+              () => {}
             );
             started = true;
             break;
@@ -412,6 +469,36 @@ export function BarcodeScannerModal() {
           setIsCameraActive(true);
           setCameraError(null);
           setCameraErrorType(null);
+
+          // Step 3: Run native BarcodeDetector parallel loop if supported by browser engine (Chrome/Edge)
+          if (typeof window !== "undefined" && "BarcodeDetector" in window) {
+            try {
+              const formats = await (window as any).BarcodeDetector.getSupportedFormats();
+              nativeDetectorRef.current = new (window as any).BarcodeDetector({
+                formats:
+                  formats && formats.length > 0
+                    ? formats
+                    : ["code_128", "code_39", "code_93", "ean_13", "ean_8", "upc_a", "upc_e", "qr_code"],
+              });
+
+              nativeIntervalRef.current = setInterval(async () => {
+                const videoEl = document.querySelector(`#${scannerContainerId} video`) as HTMLVideoElement;
+                if (!videoEl || videoEl.readyState < 2 || videoEl.paused) return;
+
+                try {
+                  const detected = await nativeDetectorRef.current.detect(videoEl);
+                  if (detected && detected.length > 0 && detected[0]?.rawValue) {
+                    const rawVal = detected[0].rawValue.trim();
+                    if (rawVal) {
+                      handleProcessBarcode(rawVal);
+                    }
+                  }
+                } catch {}
+              }, 120);
+            } catch (detectorInitErr) {
+              console.warn("Native BarcodeDetector loop init failed:", detectorInitErr);
+            }
+          }
 
           // Check if torch/flashlight is supported
           try {
@@ -476,7 +563,7 @@ export function BarcodeScannerModal() {
       const tempScanner = html5QrCodeRef.current || new Html5Qrcode(scannerContainerId);
       const decodedText = await tempScanner.scanFile(file, true);
       handleProcessBarcode(decodedText);
-    } catch (err: any) {
+    } catch {
       setSearchError(
         lang === "ar"
           ? "لم يتم العثور على باركود صالح في الصورة المختارة."
@@ -494,7 +581,6 @@ export function BarcodeScannerModal() {
   useEffect(() => {
     let timer: NodeJS.Timeout | null = null;
     if (isOpen && activeTab === "camera" && !productResult && !invoiceResult) {
-      // Slight delay ensures modal transition and container element are fully in DOM
       timer = setTimeout(() => {
         startCamera();
       }, 100);
@@ -506,7 +592,7 @@ export function BarcodeScannerModal() {
       if (timer) clearTimeout(timer);
       stopCamera();
     };
-  }, [isOpen, activeTab, productResult, invoiceResult]); // Notice: startCamera/stopCamera intentionally omitted to avoid re-trigger loops
+  }, [isOpen, activeTab, productResult, invoiceResult]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Focus manual input when manual tab is clicked
   useEffect(() => {
@@ -545,7 +631,6 @@ export function BarcodeScannerModal() {
       setAddedSuccess(true);
       setTimeout(() => setAddedSuccess(false), 2500);
     } else {
-      // Item has options/variations to select
       openVariationModal(item);
       closeScanner();
     }
@@ -930,7 +1015,7 @@ export function BarcodeScannerModal() {
 
           {/* 3. ERROR MESSAGE */}
           {searchError && (
-            <div className="bg-red-950/40 border border-red-500/30 rounded-xl p-3 flex items-start gap-2.5 text-xs text-red-300">
+            <div className="bg-red-950/40 border border-red-500/30 rounded-xl p-3 flex items-start gap-2.5 text-xs text-red-300 animate-in fade-in">
               <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
               <div className="flex-1">
                 <p className="font-semibold">{searchError}</p>
@@ -959,29 +1044,44 @@ export function BarcodeScannerModal() {
                 {/* Animated Aiming Reticle Overlay */}
                 {isCameraActive && (
                   <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-                    <div className="w-64 h-40 border-2 border-amber-400/80 rounded-xl relative shadow-[0_0_20px_rgba(245,158,11,0.2)]">
+                    <div className="w-[88%] h-[68%] border-2 border-amber-400/80 rounded-xl relative shadow-[0_0_20px_rgba(245,158,11,0.25)] flex flex-col justify-between p-2">
                       {/* Corner Accents */}
-                      <span className="absolute -top-1 -start-1 w-4 h-4 border-t-2 border-s-2 border-amber-400" />
-                      <span className="absolute -top-1 -end-1 w-4 h-4 border-t-2 border-e-2 border-amber-400" />
-                      <span className="absolute -bottom-1 -start-1 w-4 h-4 border-b-2 border-s-2 border-amber-400" />
-                      <span className="absolute -bottom-1 -end-1 w-4 h-4 border-b-2 border-e-2 border-amber-400" />
+                      <span className="absolute -top-1 -start-1 w-5 h-5 border-t-4 border-s-4 border-amber-400 rounded-tl" />
+                      <span className="absolute -top-1 -end-1 w-5 h-5 border-t-4 border-e-4 border-amber-400 rounded-tr" />
+                      <span className="absolute -bottom-1 -start-1 w-5 h-5 border-b-4 border-s-4 border-amber-400 rounded-bl" />
+                      <span className="absolute -bottom-1 -end-1 w-5 h-5 border-b-4 border-e-4 border-amber-400 rounded-br" />
 
                       {/* Animated Red Laser Scan Line */}
-                      <div className="absolute left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-red-500 to-transparent shadow-[0_0_8px_#ef4444] animate-[bounce_2s_infinite]" />
+                      <div className="absolute left-1 right-1 top-1/2 -translate-y-1/2 h-0.5 bg-gradient-to-r from-transparent via-red-500 to-transparent shadow-[0_0_10px_#ef4444] animate-pulse" />
+
+                      {/* Real-time scan hint in target box */}
+                      <div className="self-center mt-auto bg-black/60 px-3 py-1 rounded-full text-[10px] text-amber-200 backdrop-blur-sm border border-amber-500/20">
+                        {mode === "PRODUCT" ? "Point at Product / Variant Barcode" : "Point at Receipt / Invoice Barcode"}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Detected Barcode Toast Notification */}
+                {isSearching && lastScannedCode && (
+                  <div className="absolute top-4 inset-x-0 flex justify-center z-20 pointer-events-none">
+                    <div className="bg-emerald-600 text-white px-3.5 py-1.5 rounded-full text-xs font-mono font-bold flex items-center gap-2 shadow-xl animate-in zoom-in-95">
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Scanned: {lastScannedCode}</span>
                     </div>
                   </div>
                 )}
 
                 {/* Camera Floating Controls (Torch, Camera Switch) */}
                 {isCameraActive && (
-                  <div className="absolute bottom-3 inset-x-0 flex items-center justify-center gap-3 pointer-events-auto">
+                  <div className="absolute bottom-3 inset-x-0 flex items-center justify-center gap-3 pointer-events-auto z-10">
                     {hasTorch && (
                       <button
                         type="button"
                         onClick={handleToggleTorch}
-                        className={`p-2 rounded-full border backdrop-blur-md transition ${
+                        className={`p-2.5 rounded-full border backdrop-blur-md transition ${
                           isTorchOn
-                            ? "bg-amber-500 text-black border-amber-400"
+                            ? "bg-amber-500 text-black border-amber-400 shadow-lg shadow-amber-500/40"
                             : "bg-black/60 text-white border-white/20 hover:bg-black/80"
                         }`}
                         title={t.scanner.toggleTorch}
@@ -994,7 +1094,7 @@ export function BarcodeScannerModal() {
                       <button
                         type="button"
                         onClick={handleSwitchCamera}
-                        className="p-2 rounded-full bg-black/60 border border-white/20 text-white backdrop-blur-md hover:bg-black/80 transition"
+                        className="p-2.5 rounded-full bg-black/60 border border-white/20 text-white backdrop-blur-md hover:bg-black/80 transition"
                         title={t.scanner.switchCamera}
                       >
                         <SwitchCamera className="w-4 h-4" />
@@ -1004,7 +1104,7 @@ export function BarcodeScannerModal() {
                     <button
                       type="button"
                       onClick={stopCamera}
-                      className="p-2 rounded-full bg-black/60 border border-white/20 text-white backdrop-blur-md hover:bg-black/80 transition"
+                      className="p-2.5 rounded-full bg-black/60 border border-white/20 text-white backdrop-blur-md hover:bg-black/80 transition"
                       title={t.scanner.stopCamera}
                     >
                       <CameraOff className="w-4 h-4" />
@@ -1013,7 +1113,7 @@ export function BarcodeScannerModal() {
                 )}
 
                 {/* Loading / Searching Spinner Overlay */}
-                {isSearching && (
+                {isSearching && !lastScannedCode && (
                   <div className="absolute inset-0 bg-black/70 backdrop-blur-sm flex flex-col items-center justify-center gap-2 z-10">
                     <Loader2 className="w-8 h-8 text-amber-400 animate-spin" />
                     <span className="text-xs font-semibold text-white">Searching barcode...</span>
@@ -1078,9 +1178,10 @@ export function BarcodeScannerModal() {
                 )}
               </div>
 
-              <p className="text-[11px] text-center text-[#8C7A6B]">
-                {t.scanner.pointingTip}
-              </p>
+              <div className="flex items-center justify-between text-[11px] text-[#8C7A6B] px-1">
+                <span>Hold barcode steady 15–20cm from lens</span>
+                <span className="font-mono text-amber-400/80">Code128 • EAN13 • UPC</span>
+              </div>
             </div>
           )}
 
