@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   X,
   Coins,
@@ -13,6 +14,8 @@ import {
   DollarSign,
   FileText,
   Lock,
+  ExternalLink,
+  History,
 } from "lucide-react";
 import {
   useCurrentShift,
@@ -30,6 +33,7 @@ interface ShiftControlModalProps {
 }
 
 export function ShiftControlModal({ isOpen, onClose }: ShiftControlModalProps) {
+  const router = useRouter();
   const { data: shiftData, isLoading, refetch } = useCurrentShift();
   const { data: business } = useBusiness();
   const { lang } = useLangStore();
@@ -193,6 +197,20 @@ export function ShiftControlModal({ isOpen, onClose }: ShiftControlModalProps) {
                 <CheckCircle2 className="w-5 h-5" />
                 <span>{openShiftMutation.isPending ? "Opening Shift..." : "Open Register & Start Shift"}</span>
               </button>
+
+              <div className="pt-2 text-center">
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    router.push("/shifts");
+                  }}
+                  className="inline-flex items-center gap-1.5 text-xs text-warmgray-500 hover:text-warmgray-700 dark:hover:text-warmgray-300 font-medium"
+                >
+                  <History className="w-3.5 h-3.5" />
+                  <span>View Previous Shift History</span>
+                </button>
+              </div>
             </div>
           ) : activeTab === "MAIN" ? (
             /* 2. ACTIVE SHIFT DASHBOARD */
@@ -266,6 +284,32 @@ export function ShiftControlModal({ isOpen, onClose }: ShiftControlModalProps) {
                 >
                   <FileText className="w-4 h-4" />
                   <span>Close Shift & Z-Report</span>
+                </button>
+              </div>
+
+              {/* Navigation to Full Shift Details & History */}
+              <div className="pt-3 border-t border-warmgray-100 dark:border-warmgray-800 flex items-center justify-between text-xs">
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    router.push(`/shifts/${currentShift.id}`);
+                  }}
+                  className="inline-flex items-center gap-1.5 text-amber-600 dark:text-amber-400 hover:text-amber-700 font-bold hover:underline"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  <span>View Shift Details Page</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    router.push("/shifts");
+                  }}
+                  className="inline-flex items-center gap-1.5 text-warmgray-500 hover:text-warmgray-700 dark:hover:text-warmgray-300 font-medium"
+                >
+                  <History className="w-3.5 h-3.5" />
+                  <span>Shift History</span>
                 </button>
               </div>
             </div>

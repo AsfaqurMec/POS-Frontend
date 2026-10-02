@@ -42,7 +42,7 @@
   background: rgba(160, 160, 160, 0.5);
 }
 
-/* Clean Thermal Receipt Print Styles */
+/* Clean Thermal Receipt & Shift Report Print Styles */
 @media print {
   html, body {
     background: #ffffff !important;
@@ -53,16 +53,22 @@
   body * {
     visibility: hidden;
   }
-  #printable-receipt, #printable-receipt * {
+  #printable-receipt, #printable-receipt *,
+  #z-report-paper, #z-report-paper *,
+  #printable-shift-report, #printable-shift-report *,
+  .printable-area, .printable-area * {
     visibility: visible !important;
   }
-  #printable-receipt {
+  #printable-receipt,
+  #z-report-paper,
+  .printable-thermal {
     position: absolute;
     left: 0;
     top: 0;
-    width: 80mm;
-    margin: 0;
-    padding: 4mm;
+    width: 80mm !important;
+    max-width: 80mm !important;
+    margin: 0 !important;
+    padding: 4mm !important;
     border: none !important;
     box-shadow: none !important;
     background: #ffffff !important;
@@ -70,12 +76,31 @@
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
-  #printable-receipt svg {
+  #printable-shift-report,
+  .printable-full-report {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 8mm !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  #printable-receipt svg,
+  #z-report-paper svg,
+  #printable-shift-report svg,
+  .printable-area svg {
     display: block !important;
     visibility: visible !important;
   }
   @page {
-    size: 80mm auto;
+    size: auto;
     margin: 0;
   }
 }

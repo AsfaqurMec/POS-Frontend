@@ -564,6 +564,82 @@ export interface ShiftReport {
   cashMovements: CashMovement[];
 }
 
+export interface ShiftListItem {
+  id: string;
+  businessId: string;
+  userId: string;
+  openedAt: string;
+  closedAt?: string | null;
+  startFloat: number;
+  expectedCash?: number | null;
+  actualCash?: number | null;
+  cashVariance?: number | null;
+  notes?: string | null;
+  status: "OPEN" | "CLOSED";
+  user: { id: string; name: string; email: string; role: Role };
+  totalSales: number;
+  totalOrders: number;
+  cashMovementsCount: number;
+}
+
+export interface ShiftsListResponse {
+  shifts: ShiftListItem[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+  stats: {
+    totalShifts: number;
+    openShifts: number;
+    closedShifts: number;
+    totalRevenue: number;
+    totalVariance: number;
+  };
+}
+
+export interface ShiftDetailResponse {
+  business: Business;
+  shift: Shift;
+  summary: {
+    totalOrders: number;
+    totalAllOrders: number;
+    firstInvoice: string;
+    lastInvoice: string;
+    subtotal: number;
+    totalDiscounts: number;
+    totalTax: number;
+    totalRevenue: number;
+    tenders: {
+      cash: number;
+      card: number;
+      other: number;
+    };
+    cashReconciliation: {
+      startFloat: number;
+      cashSales: number;
+      paidIns: number;
+      paidOuts: number;
+      expectedInDrawer: number;
+      actualCounted: number;
+      overShort: number;
+    };
+  };
+  cashMovements: CashMovement[];
+  sales: (Sale & {
+    invoice?: { id: string; invoiceNumber: string; createdAt: string } | null;
+    items?: {
+      id: string;
+      itemNameEnSnapshot: string;
+      itemNameArSnapshot: string;
+      quantity: number;
+      unitPrice: number;
+      lineTotal: number;
+    }[];
+  })[];
+}
+
 export interface HeldOrder {
   id: string;
   businessId: string;

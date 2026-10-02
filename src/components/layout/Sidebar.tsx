@@ -19,6 +19,7 @@ import {
   X,
   ChefHat,
   Scale,
+  Coins,
 } from "lucide-react";
 import { useLangStore } from "@/store/langStore";
 import { useAuthStore } from "@/store/authStore";
@@ -38,6 +39,7 @@ const navItems: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", labelKey: "dashboard", icon: LayoutDashboard, adminOnly: true },
   { href: "/pos", label: "POS", labelKey: "pos", icon: Store },
   { href: "/orders", label: "Orders", labelKey: "orders", icon: Receipt },
+  { href: "/shifts", label: "Shifts", labelKey: "shifts", icon: Coins, adminOnly: true },
   { href: "/kds", label: "Kitchen Display (KDS)", labelKey: "kds", icon: ChefHat },
   { href: "/products", label: "Menu Items", labelKey: "products", icon: Coffee, adminOnly: true },
   { href: "/categories", label: "Categories", labelKey: "categories", icon: FolderTree, adminOnly: true },

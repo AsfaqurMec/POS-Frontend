@@ -46,12 +46,13 @@ export function ZReportModal({ isOpen, report, onClose }: ZReportModalProps) {
         <div className="flex-1 overflow-y-auto py-4">
           <div
             id="z-report-paper"
-            className="w-full bg-[#FAFAF8] text-[#1C120C] p-5 rounded-2xl border border-warmgray-200 font-mono text-xs shadow-inner space-y-3"
+            style={{ WebkitPrintColorAdjust: "exact", printColorAdjust: "exact" }}
+            className="printable-thermal w-full bg-[#FAFAF8] text-[#1C120C] p-5 rounded-2xl border border-warmgray-200 font-mono text-xs shadow-inner space-y-3 print:p-2 print:shadow-none print:border-none print:bg-white print:text-black"
           >
             {/* Header */}
             <div className="text-center space-y-1">
-              <h2 className="text-base font-black tracking-tight">{business.nameEn}</h2>
-              <p className="text-[11px] text-warmgray-600">{business.addressEn || "Main Branch"}</p>
+              <h2 className="text-base font-black tracking-tight">{business?.nameEn || "Coffee Shop"}</h2>
+              <p className="text-[11px] text-warmgray-600">{business?.addressEn || "Main Branch"}</p>
               <p className="text-[10px] uppercase font-bold tracking-widest bg-amber-500/10 text-amber-900 py-0.5 rounded mt-1">
                 *** Z-REPORT (DAILY CLOSING) ***
               </p>

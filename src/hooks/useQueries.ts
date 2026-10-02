@@ -16,6 +16,9 @@ import {
   CashMovement,
   ShiftRunningStats,
   ShiftReport,
+  ShiftListItem,
+  ShiftsListResponse,
+  ShiftDetailResponse,
   HeldOrder,
   Ingredient,
   WasteLog,
@@ -197,6 +200,40 @@ export function useShiftReport(shiftId?: string) {
   return useQuery<ShiftReport>({
     queryKey: ["shift-report", shiftId],
     queryFn: () => api.get<ShiftReport>(`/shifts/${shiftId}/report`),
+    enabled: Boolean(shiftId),
+  });
+}
+
+export function useShifts(
+  page = 1,
+  limit = 20,
+  filters?: {
+    status?: string;
+    startDate?: string;
+    endDate?: string;
+    userId?: string;
+    search?: string;
+  }
+) {
+  const queryParams = new URLSearchParams();
+  queryParams.set("page", page.toString());
+  queryParams.set("limit", limit.toString());
+  if (filters?.status && filters.status !== "ALL") queryParams.set("status", filters.status);
+  if (filters?.startDate) queryParams.set("startDate", filters.startDate);
+  if (filters?.endDate) queryParams.set("endDate", filters.endDate);
+  if (filters?.userId) queryParams.set("userId", filters.userId);
+  if (filters?.search) queryParams.set("search", filters.search);
+
+  return useQuery<ShiftsListResponse>({
+    queryKey: ["shifts", page, limit, filters],
+    queryFn: () => api.get<ShiftsListResponse>(`/shifts?${queryParams.toString()}`),
+  });
+}
+
+export function useShift(shiftId?: string) {
+  return useQuery<ShiftDetailResponse>({
+    queryKey: ["shift", shiftId],
+    queryFn: () => api.get<ShiftDetailResponse>(`/shifts/${shiftId}`),
     enabled: Boolean(shiftId),
   });
 }
