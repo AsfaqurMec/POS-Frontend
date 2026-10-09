@@ -156,6 +156,8 @@ export function ProductGrid() {
                         <img
                           src={getMediaUrl(cat.imageUrl)}
                           alt={name}
+                          loading="lazy"
+                          decoding="async"
                           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                         />
                       ) : (
@@ -246,6 +248,8 @@ export function ProductGrid() {
                         <img
                           src={getMediaUrl(item.imageUrl)}
                           alt={name}
+                          loading="lazy"
+                          decoding="async"
                           className={`w-full h-full object-cover transition-transform duration-300 ${
                             isOutOfStock
                               ? "grayscale contrast-75"

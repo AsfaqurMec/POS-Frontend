@@ -1,7 +1,6 @@
 import { MetadataRoute } from "next";
 
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
+export const revalidate = 3600; // Cache manifest with ISR for fast instant delivery
 
 export default async function manifest(): Promise<MetadataRoute.Manifest> {
   let name = "POS Terminal";
@@ -10,7 +9,14 @@ export default async function manifest(): Promise<MetadataRoute.Manifest> {
 
   try {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
-    const res = await fetch(`${apiUrl}/business`, { cache: "no-store" });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 600);
+
+    const res = await fetch(`${apiUrl}/business`, {
+      next: { revalidate: 3600 },
+      signal: controller.signal,
+    }).finally(() => clearTimeout(timeoutId));
+
     if (res.ok) {
       const json = await res.json();
       const business = json?.data || json?.business;
@@ -26,7 +32,7 @@ export default async function manifest(): Promise<MetadataRoute.Manifest> {
       }
     }
   } catch (err) {
-    console.warn("[PWA Manifest] Falling back to default manifest info:", err);
+    // Non-blocking fallback to default values
   }
 
   return {
@@ -43,25 +49,25 @@ export default async function manifest(): Promise<MetadataRoute.Manifest> {
     theme_color: "#18110B",
     icons: [
       {
-        src: "/api/pwa-icon/192.png",
+        src: "/icons/icon-192x192.png",
         sizes: "192x192",
         type: "image/png",
         purpose: "any",
       },
       {
-        src: "/api/pwa-icon/512.png",
+        src: "/icons/icon-512x512.png",
         sizes: "512x512",
         type: "image/png",
         purpose: "any",
       },
       {
-        src: "/api/pwa-icon/maskable-512.png",
+        src: "/icons/icon-maskable-512x512.png",
         sizes: "512x512",
         type: "image/png",
         purpose: "maskable",
       },
       {
-        src: "/api/pwa-icon/apple-180.png",
+        src: "/icons/apple-touch-icon.png",
         sizes: "180x180",
         type: "image/png",
       },
@@ -79,21 +85,21 @@ export default async function manifest(): Promise<MetadataRoute.Manifest> {
         short_name: "POS",
         description: "Open Cash Register",
         url: "/pos",
-        icons: [{ src: "/api/pwa-icon/192.png", sizes: "192x192" }],
+        icons: [{ src: "/icons/icon-192x192.png", sizes: "192x192" }],
       },
       {
         name: "Kitchen Display (KDS)",
         short_name: "KDS",
         description: "Open Kitchen Display",
         url: "/kds",
-        icons: [{ src: "/api/pwa-icon/192.png", sizes: "192x192" }],
+        icons: [{ src: "/icons/icon-192x192.png", sizes: "192x192" }],
       },
       {
         name: "Customer Display (CFD)",
         short_name: "CFD",
         description: "Open Customer Facing Display",
         url: "/cfd",
-        icons: [{ src: "/api/pwa-icon/192.png", sizes: "192x192" }],
+        icons: [{ src: "/icons/icon-192x192.png", sizes: "192x192" }],
       },
     ],
   };

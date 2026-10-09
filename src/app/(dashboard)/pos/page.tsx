@@ -1,15 +1,22 @@
 "use client";
 
-import React from "react";
+import dynamic from "next/dynamic";
 import { CategoryBar } from "@/features/pos/CategoryBar";
 import { ProductGrid } from "@/features/pos/ProductGrid";
 import { CartPanel } from "@/features/pos/CartPanel";
-import { VariationModal } from "@/features/pos/VariationModal";
-import { ReceiptModal } from "@/features/pos/ReceiptModal";
 import { useState } from "react";
 import { useBusiness } from "@/hooks/useQueries";
 import { getMediaUrl } from "@/lib/env";
 import { Coffee } from "lucide-react";
+
+const VariationModal = dynamic(
+  () => import("@/features/pos/VariationModal").then((mod) => mod.VariationModal),
+  { ssr: false }
+);
+const ReceiptModal = dynamic(
+  () => import("@/features/pos/ReceiptModal").then((mod) => mod.ReceiptModal),
+  { ssr: false }
+);
 export default function PosPage() {
   const { data: business } = useBusiness();
   const [logoError, setLogoError] = useState(false);

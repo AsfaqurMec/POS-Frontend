@@ -58,8 +58,20 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         return;
       }
 
+      // Fast-Path: Instant Hydration from localStorage so PWA renders without spinner delay
+      const userStr = localStorage.getItem("pos_user");
+      let initialUser: User | null = null;
+      if (userStr) {
+        try {
+          initialUser = JSON.parse(userStr);
+          set({ user: initialUser, token, isAuthenticated: true, isLoading: false });
+        } catch {
+          // JSON parse failed
+        }
+      }
+
       try {
-        // Authoritative verification against server endpoint
+        // Authoritative verification against server endpoint (stale-while-revalidate pattern)
         const res = await fetch(`${API_BASE_URL}/auth/me`, {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -70,20 +82,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           localStorage.setItem("pos_user", JSON.stringify(serverUser));
           set({ user: serverUser, token, isAuthenticated: true, isLoading: false });
           return;
-        } else {
-          // Token is invalid, expired, or tampered with
+        } else if (res.status === 401 || res.status === 403) {
+          // Token is definitively invalid, expired, or tampered with
           get().logout();
           return;
         }
       } catch {
-        // In case of offline/network glitch, check fallback user but prevent role spoofing
-        const userStr = localStorage.getItem("pos_user");
-        if (userStr) {
-          try {
-            const user = JSON.parse(userStr);
-            set({ user, token, isAuthenticated: true, isLoading: false });
-            return;
-          } catch {}
+        // Offline / Network glitch: keep cached user session if present
+        if (initialUser) {
+          return;
         }
         get().logout();
         return;

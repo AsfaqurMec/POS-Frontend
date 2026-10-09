@@ -18,7 +18,14 @@ export async function generateMetadata(): Promise<Metadata> {
 
   try {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
-    const res = await fetch(`${apiUrl}/business`, { cache: "no-store" });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 600); // 600ms non-blocking ceiling
+
+    const res = await fetch(`${apiUrl}/business`, {
+      next: { revalidate: 3600 },
+      signal: controller.signal,
+    }).finally(() => clearTimeout(timeoutId));
+
     if (res.ok) {
       const json = await res.json();
       const business = json?.data || json?.business;
@@ -34,7 +41,7 @@ export async function generateMetadata(): Promise<Metadata> {
       }
     }
   } catch {
-    // Fall back to defaults if backend unavailable
+    // Instant fallback if backend is slow, cold, or offline
   }
 
   return {
@@ -52,11 +59,11 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     icons: {
       icon: [
-        { url: "/api/pwa-icon/192.png", sizes: "192x192", type: "image/png" },
+        { url: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" },
         { url: "/favicon.svg", type: "image/svg+xml" },
       ],
       shortcut: "/favicon.svg",
-      apple: "/api/pwa-icon/apple-180.png",
+      apple: "/icons/apple-touch-icon.png",
     },
   };
 }

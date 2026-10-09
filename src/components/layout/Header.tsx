@@ -33,9 +33,20 @@ import { useDisplayMode } from "@/hooks/useDisplayMode";
 import { useBusiness, useCurrentShift } from "@/hooks/useQueries";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ManagerPinModal } from "../modals/ManagerPinModal";
-import { ShiftControlModal } from "../modals/ShiftControlModal";
-import { BarcodeScannerModal } from "../modals/BarcodeScannerModal";
+import dynamic from "next/dynamic";
+
+const ManagerPinModal = dynamic(
+  () => import("../modals/ManagerPinModal").then((m) => m.ManagerPinModal),
+  { ssr: false }
+);
+const ShiftControlModal = dynamic(
+  () => import("../modals/ShiftControlModal").then((m) => m.ShiftControlModal),
+  { ssr: false }
+);
+const BarcodeScannerModal = dynamic(
+  () => import("../modals/BarcodeScannerModal").then((m) => m.BarcodeScannerModal),
+  { ssr: false }
+);
 
 export function Header() {
   const { lang, toggleLang, t, dir } = useLangStore();

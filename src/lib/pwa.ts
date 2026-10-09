@@ -20,8 +20,7 @@ export function registerServiceWorker(): void {
     return;
   }
 
-  // Register only when window is loaded to prevent slowing down initial page render
-  window.addEventListener("load", () => {
+  const register = () => {
     navigator.serviceWorker
       .register("/sw.js", { scope: "/" })
       .then((reg) => {
@@ -40,7 +39,13 @@ export function registerServiceWorker(): void {
       .catch((err) => {
         console.warn("[PWA] Service worker registration failed:", err);
       });
-  });
+  };
+
+  if (document.readyState === "complete") {
+    register();
+  } else {
+    window.addEventListener("load", register);
+  }
 
   // Listen for Chrome / Chromium PWA install prompt
   window.addEventListener("beforeinstallprompt", (e: any) => {
