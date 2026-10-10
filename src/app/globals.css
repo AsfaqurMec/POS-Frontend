@@ -131,3 +131,142 @@
 #reader-viewport__dashboard_section {
   display: none !important;
 }
+
+/* ======================================================== */
+/* Coffee POS Keyframes & Animations                        */
+/* ======================================================== */
+@keyframes floatSlow {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-14px) rotate(4deg);
+  }
+}
+
+@keyframes floatMedium {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-18px) rotate(-5deg);
+  }
+}
+
+@keyframes floatFast {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-10px) rotate(3deg);
+  }
+}
+
+@keyframes steamRise1 {
+  0% {
+    transform: translateY(0) scaleX(0.9);
+    opacity: 0;
+  }
+  30% {
+    opacity: 0.75;
+  }
+  60% {
+    transform: translateY(-38px) scaleX(1.3) translateX(-6px);
+    opacity: 0.5;
+  }
+  100% {
+    transform: translateY(-75px) scaleX(1.8) translateX(8px);
+    opacity: 0;
+  }
+}
+
+@keyframes steamRise2 {
+  0% {
+    transform: translateY(0) scaleX(0.9);
+    opacity: 0;
+  }
+  25% {
+    opacity: 0.85;
+  }
+  55% {
+    transform: translateY(-44px) scaleX(1.25) translateX(7px);
+    opacity: 0.55;
+  }
+  100% {
+    transform: translateY(-88px) scaleX(1.7) translateX(-9px);
+    opacity: 0;
+  }
+}
+
+@keyframes steamRise3 {
+  0% {
+    transform: translateY(0) scaleX(1);
+    opacity: 0;
+  }
+  35% {
+    opacity: 0.7;
+  }
+  65% {
+    transform: translateY(-36px) scaleX(1.2) translateX(-5px);
+    opacity: 0.45;
+  }
+  100% {
+    transform: translateY(-70px) scaleX(1.6) translateX(6px);
+    opacity: 0;
+  }
+}
+
+@keyframes cremaRipple {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.65;
+  }
+  50% {
+    transform: scale(1.04);
+    opacity: 0.9;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-float-slow {
+  animation: floatSlow 7s ease-in-out infinite;
+}
+
+.animate-float-medium {
+  animation: floatMedium 5.5s ease-in-out infinite;
+}
+
+.animate-float-fast {
+  animation: floatFast 4.2s ease-in-out infinite;
+}
+
+.animate-steam-1 {
+  animation: steamRise1 3.8s ease-in-out infinite;
+}
+
+.animate-steam-2 {
+  animation: steamRise2 4.4s ease-in-out infinite 0.9s;
+}
+
+.animate-steam-3 {
+  animation: steamRise3 3.6s ease-in-out infinite 1.8s;
+}
+
+.animate-crema-pulse {
+  animation: cremaRipple 4s ease-in-out infinite;
+  transform-origin: 120px 82px;
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.25s ease-out forwards;
+}
