@@ -62,12 +62,13 @@ export function Sidebar() {
   const isGuest = user?.role === "GUEST";
   const filteredNav = navItems.filter((item) => !item.adminOnly || isAdmin || isGuest);
 
+  const defaultShopName = lang === "ar" ? "مقهى أروما للقهوة المختصة" : "MK Coffee Riyadh";
   const shopName =
     lang === "ar"
-      ? business?.nameAr || business?.nameEn || "POS"
-      : business?.nameEn || business?.nameAr || "POS";
+      ? business?.nameAr || business?.nameEn || defaultShopName
+      : business?.nameEn || business?.nameAr || defaultShopName;
 
-  const logoUrl = business?.logoUrl ? getMediaUrl(business.logoUrl) : null;
+  const logoUrl = business?.logoUrl ? getMediaUrl(business.logoUrl) : "/logo.png";
 
   const sidebarContent = (
     <div className="flex flex-col h-full bg-[#18110B] text-[#CBB9AB] border-e border-[#281B12] select-none">
@@ -104,6 +105,12 @@ export function Sidebar() {
               <img
                 src={logoUrl}
                 alt={shopName}
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  if (target && !target.src.endsWith("/logo.png")) {
+                    target.src = "/logo.png";
+                  }
+                }}
                 className={`w-full h-full ${sidebarCollapsed ? "object-contain " : "object-contain "}`}
               />
             ) : (

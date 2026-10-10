@@ -21,10 +21,11 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { data: business } = useBusiness();
   const { lang } = useLangStore();
 
+  const defaultBusinessName = lang === "ar" ? "مقهى أروما للقهوة المختصة" : "MK Coffee Riyadh";
   const businessName =
     lang === "ar"
-      ? business?.nameAr || business?.nameEn || "POS"
-      : business?.nameEn || business?.nameAr || "POS";
+      ? business?.nameAr || business?.nameEn || defaultBusinessName
+      : business?.nameEn || business?.nameAr || defaultBusinessName;
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {

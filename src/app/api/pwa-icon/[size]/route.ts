@@ -5,12 +5,29 @@ import path from "path";
 
 export const dynamic = "force-dynamic";
 
+// In-memory icon cache to guarantee sub-millisecond response times
+const iconCache = new Map<string, Buffer>();
+
 export async function GET(
   _request: NextRequest,
   { params }: { params: { size: string } }
 ) {
   try {
     const rawParam = params?.size || "192.png";
+    const cacheKey = rawParam.toLowerCase();
+
+    // Check memory cache first
+    const cached = iconCache.get(cacheKey);
+    if (cached) {
+      return new NextResponse(new Uint8Array(cached), {
+        status: 200,
+        headers: {
+          "Content-Type": "image/png",
+          "Cache-Control": "public, max-age=86400, stale-while-revalidate=604800",
+        },
+      });
+    }
+
     const isMaskable = rawParam.includes("maskable");
     const isApple = rawParam.includes("apple");
     
@@ -48,10 +65,18 @@ export async function GET(
         }
       }
     } catch {
-      // Fall through to default icon
+      // Fall through to disk fallback
     }
 
-    // If no custom logo available, read fallback icon from public folder
+    // Direct fallback to public/logo.png (the persistent business logo)
+    if (!logoBuffer) {
+      const publicLogoPath = path.resolve(process.cwd(), "public/logo.png");
+      if (fs.existsSync(publicLogoPath)) {
+        logoBuffer = fs.readFileSync(publicLogoPath);
+      }
+    }
+
+    // If still no logo, read generated icon from public icons folder
     if (!logoBuffer) {
       const fallbackPath = path.resolve(
         process.cwd(),
@@ -103,11 +128,14 @@ export async function GET(
         .toBuffer();
     }
 
+    // Store in memory cache
+    iconCache.set(cacheKey, finalPngBuffer);
+
     return new NextResponse(new Uint8Array(finalPngBuffer), {
       status: 200,
       headers: {
         "Content-Type": "image/png",
-        "Cache-Control": "public, max-age=60, stale-while-revalidate=300",
+        "Cache-Control": "public, max-age=86400, stale-while-revalidate=604800",
       },
     });
   } catch (error) {

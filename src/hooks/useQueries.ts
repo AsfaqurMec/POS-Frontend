@@ -25,10 +25,43 @@ import {
   KdsOrder,
 } from "@/types";
 
+const fallbackBusiness: Business = {
+  id: "default-business-id",
+  nameEn: "MK Coffee Riyadh",
+  nameAr: "مقهى أروما للقهوة المختصة",
+  logoUrl: "/logo.png",
+  currency: "SAR",
+  timezone: "Asia/Riyadh",
+  taxEnabled: true,
+  taxRate: 15,
+  pricingMode: "EXCLUSIVE",
+  invoicePrefix: "INV-",
+  receiptFooterEn: "Thank you for visiting MK Coffee! Have a wonderful day.",
+  receiptFooterAr: "شكراً لزيارتكم مقهى أروما للقهوة المختصة! نتمنى لكم يوماً رائعاً.",
+};
+
 export function useBusiness() {
   return useQuery<Business>({
     queryKey: ["business"],
-    queryFn: () => api.get<Business>("/business"),
+    queryFn: async () => {
+      const data = await api.get<Business>("/business");
+      if (typeof window !== "undefined" && data) {
+        localStorage.setItem("pos_business", JSON.stringify(data));
+      }
+      return data;
+    },
+    initialData: () => {
+      if (typeof window !== "undefined") {
+        const stored = localStorage.getItem("pos_business");
+        if (stored) {
+          try {
+            return JSON.parse(stored);
+          } catch {}
+        }
+      }
+      return fallbackBusiness;
+    },
+    staleTime: 1000 * 60 * 10,
   });
 }
 

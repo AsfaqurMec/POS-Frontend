@@ -1,4 +1,4 @@
-﻿export const API_BASE_URL =
+export const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 
 export const BACKEND_URL =
@@ -6,10 +6,12 @@ export const BACKEND_URL =
   (API_BASE_URL.replace(/\/api\/?$/, "") || "http://localhost:5000");
 
 /**
- * Normalizes relative or absolute media/upload paths into full URLs using the configured BACKEND_URL.
+ * Normalizes relative or absolute media/upload paths into clean URLs.
+ * If path is relative (/uploads/...), returns it directly so Next.js rewrites and PWA Service Worker
+ * can intercept and cache the images locally.
  */
 export function getMediaUrl(path?: string | null): string {
-  if (!path) return "";
+  if (!path) return "/logo.png";
   if (
     path.startsWith("http://") ||
     path.startsWith("https://") ||
@@ -19,5 +21,5 @@ export function getMediaUrl(path?: string | null): string {
     return path;
   }
   const cleanPath = path.startsWith("/") ? path : `/${path}`;
-  return `${BACKEND_URL}${cleanPath}`;
+  return cleanPath;
 }

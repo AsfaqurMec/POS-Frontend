@@ -12,9 +12,9 @@ export const viewport: Viewport = {
 };
 
 export async function generateMetadata(): Promise<Metadata> {
-  let title = "POS Terminal";
-  let appName = "CoffeeShop POS";
-  let description = "Modern Production-Ready Point of Sale System";
+  let title = "MK Coffee Riyadh - POS Terminal";
+  let appName = "MK Coffee Riyadh";
+  let description = "MK Coffee Riyadh - Specialty Coffee Point of Sale System";
 
   try {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
@@ -59,11 +59,16 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     icons: {
       icon: [
+        { url: "/api/pwa-icon/192.png", sizes: "192x192", type: "image/png" },
+        { url: "/logo.png", sizes: "512x512", type: "image/png" },
         { url: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" },
         { url: "/favicon.svg", type: "image/svg+xml" },
       ],
-      shortcut: "/favicon.svg",
-      apple: "/icons/apple-touch-icon.png",
+      shortcut: "/logo.png",
+      apple: [
+        { url: "/api/pwa-icon/apple-180.png", sizes: "180x180", type: "image/png" },
+        { url: "/icons/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+      ],
     },
   };
 }

@@ -9,10 +9,11 @@
  * 5. STRICT SAFETY: Never caches backend /api/* routes or authorized transactional endpoints.
  */
 
-const CACHE_NAME = 'pos-static-v3';
+const CACHE_NAME = 'pos-static-v4';
 
 // Safe pre-cache assets for instantaneous offline & launch performance
 const STATIC_ASSETS = [
+  '/logo.png',
   '/favicon.svg',
   '/icons/icon-192x192.png',
   '/icons/icon-512x512.png',
@@ -69,8 +70,10 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // 2. Strict safety: NEVER cache any API or backend request
-  if (
+  // 2. Strict safety: NEVER cache transactional API requests (except PWA icons)
+  if (url.pathname.startsWith('/api/pwa-icon/')) {
+    // Permitted to fall through to static asset cache below
+  } else if (
     url.pathname.startsWith('/api/') ||
     url.port === '5000' ||
     request.headers.get('Authorization')
@@ -78,10 +81,13 @@ self.addEventListener('fetch', (event) => {
     return; // Pass through to network
   }
 
-  // 3. Immutable Static Assets: _next/static, public icons, web fonts (Cache-First)
+  // 3. Immutable Static Assets: _next/static, public icons, uploads, web fonts (Cache-First)
   const isStaticAsset =
     url.pathname.startsWith('/_next/static/') ||
     url.pathname.startsWith('/icons/') ||
+    url.pathname.startsWith('/uploads/') ||
+    url.pathname.startsWith('/api/pwa-icon/') ||
+    url.pathname === '/logo.png' ||
     url.pathname === '/favicon.svg' ||
     url.hostname === 'fonts.googleapis.com' ||
     url.hostname === 'fonts.gstatic.com';

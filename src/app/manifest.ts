@@ -1,19 +1,19 @@
 import { MetadataRoute } from "next";
 
-export const revalidate = 3600; // Cache manifest with ISR for fast instant delivery
+export const dynamic = "force-dynamic";
 
 export default async function manifest(): Promise<MetadataRoute.Manifest> {
-  let name = "POS Terminal";
-  let shortName = "POS";
-  let description = "Modern Production-Ready Point of Sale System";
+  let name = "MK Coffee Riyadh";
+  let shortName = "MK Coffee";
+  let description = "Specialty Coffee POS Terminal System";
 
   try {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 600);
+    const timeoutId = setTimeout(() => controller.abort(), 1200);
 
     const res = await fetch(`${apiUrl}/business`, {
-      next: { revalidate: 3600 },
+      cache: "no-store",
       signal: controller.signal,
     }).finally(() => clearTimeout(timeoutId));
 
@@ -24,7 +24,7 @@ export default async function manifest(): Promise<MetadataRoute.Manifest> {
         const fullBusinessName = business.nameEn || business.nameAr;
         if (fullBusinessName) {
           name = fullBusinessName;
-          shortName = business.nameEn || business.nameAr || "POS";
+          shortName = business.nameEn || business.nameAr || "MK Coffee";
         }
         if (business.receiptFooterEn || business.receiptFooterAr) {
           description = business.receiptFooterEn || business.receiptFooterAr;
@@ -32,7 +32,7 @@ export default async function manifest(): Promise<MetadataRoute.Manifest> {
       }
     }
   } catch (err) {
-    // Non-blocking fallback to default values
+    // Non-blocking fallback to MK Coffee Riyadh
   }
 
   return {
@@ -49,8 +49,20 @@ export default async function manifest(): Promise<MetadataRoute.Manifest> {
     theme_color: "#18110B",
     icons: [
       {
+        src: "/api/pwa-icon/192.png",
+        sizes: "192x192",
+        type: "image/png",
+        purpose: "any",
+      },
+      {
         src: "/icons/icon-192x192.png",
         sizes: "192x192",
+        type: "image/png",
+        purpose: "any",
+      },
+      {
+        src: "/api/pwa-icon/512.png",
+        sizes: "512x512",
         type: "image/png",
         purpose: "any",
       },
@@ -61,10 +73,21 @@ export default async function manifest(): Promise<MetadataRoute.Manifest> {
         purpose: "any",
       },
       {
+        src: "/api/pwa-icon/maskable-512.png",
+        sizes: "512x512",
+        type: "image/png",
+        purpose: "maskable",
+      },
+      {
         src: "/icons/icon-maskable-512x512.png",
         sizes: "512x512",
         type: "image/png",
         purpose: "maskable",
+      },
+      {
+        src: "/api/pwa-icon/apple-180.png",
+        sizes: "180x180",
+        type: "image/png",
       },
       {
         src: "/icons/apple-touch-icon.png",
@@ -72,9 +95,9 @@ export default async function manifest(): Promise<MetadataRoute.Manifest> {
         type: "image/png",
       },
       {
-        src: "/favicon.svg",
-        sizes: "any",
-        type: "image/svg+xml",
+        src: "/logo.png",
+        sizes: "390x378",
+        type: "image/png",
         purpose: "any",
       },
     ],
@@ -85,21 +108,21 @@ export default async function manifest(): Promise<MetadataRoute.Manifest> {
         short_name: "POS",
         description: "Open Cash Register",
         url: "/pos",
-        icons: [{ src: "/icons/icon-192x192.png", sizes: "192x192" }],
+        icons: [{ src: "/api/pwa-icon/192.png", sizes: "192x192" }],
       },
       {
         name: "Kitchen Display (KDS)",
         short_name: "KDS",
         description: "Open Kitchen Display",
         url: "/kds",
-        icons: [{ src: "/icons/icon-192x192.png", sizes: "192x192" }],
+        icons: [{ src: "/api/pwa-icon/192.png", sizes: "192x192" }],
       },
       {
         name: "Customer Display (CFD)",
         short_name: "CFD",
         description: "Open Customer Facing Display",
         url: "/cfd",
-        icons: [{ src: "/icons/icon-192x192.png", sizes: "192x192" }],
+        icons: [{ src: "/api/pwa-icon/192.png", sizes: "192x192" }],
       },
     ],
   };

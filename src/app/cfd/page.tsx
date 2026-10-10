@@ -163,7 +163,7 @@ export default function CustomerFacingDisplayPage() {
   const hasItems = cartState.items.length > 0;
 
   // Resolve business logo URL
-  const logoUrl = business?.logoUrl ? getMediaUrl(business.logoUrl) : null;
+  const logoUrl = business?.logoUrl ? getMediaUrl(business.logoUrl) : "/logo.png";
 
   return (
     <div className="min-h-screen bg-[#FDFBF7] text-[#231815] flex flex-col justify-between p-2 select-none font-sans overflow-hidden cursor-default">
@@ -175,9 +175,16 @@ export default function CustomerFacingDisplayPage() {
             {logoUrl && !logoError ? (
               <img
                 src={logoUrl}
-                alt={business?.nameEn || "Logo"}
+                alt={business?.nameEn || "MK Coffee Riyadh"}
                 className="w-full h-full object-contain"
-                onError={() => setLogoError(true)}
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  if (target && !target.src.endsWith("/logo.png")) {
+                    target.src = "/logo.png";
+                  } else {
+                    setLogoError(true);
+                  }
+                }}
               />
             ) : (
               <div className="w-full h-full rounded-lg bg-amber-100/70 flex items-center justify-center text-amber-800">
@@ -189,9 +196,9 @@ export default function CustomerFacingDisplayPage() {
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-xl font-black text-[#231815] tracking-tight">
-                {business?.nameEn || "MK COFFEE"}
+                {business?.nameEn || "MK Coffee Riyadh"}
               </h1>
-              {business?.nameAr && (
+              {(business?.nameAr || "مقهى أروما للقهوة المختصة") && (
                 <span className="text-xs font-bold text-[#8A7160] hidden sm:inline">
                   • {business.nameAr}
                 </span>
@@ -451,9 +458,16 @@ export default function CustomerFacingDisplayPage() {
               {logoUrl && !logoError ? (
                 <img
                   src={logoUrl}
-                  alt={business?.nameEn || "Logo"}
+                  alt={business?.nameEn || "MK Coffee Riyadh"}
                   className="w-full h-full object-contain"
-                  onError={() => setLogoError(true)}
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    if (target && !target.src.endsWith("/logo.png")) {
+                      target.src = "/logo.png";
+                    } else {
+                      setLogoError(true);
+                    }
+                  }}
                 />
               ) : (
                 <Coffee className="w-14 h-14" />
@@ -462,13 +476,11 @@ export default function CustomerFacingDisplayPage() {
 
             <div className="space-y-2">
               <h2 className="text-3xl sm:text-4xl font-black text-[#231815] tracking-tight">
-                Welcome to {business?.nameEn || "Aroma Coffee"}
+                Welcome to {business?.nameEn || "MK Coffee Riyadh"}
               </h2>
-              {business?.nameAr && (
-                <p className="text-xl font-bold text-amber-800">
-                  أهلاً بكم في {business.nameAr}
-                </p>
-              )}
+              <p className="text-xl font-bold text-amber-800">
+                أهلاً بكم في {business?.nameAr || "مقهى أروما للقهوة المختصة"}
+              </p>
               <p className="text-base text-[#685346] font-medium pt-1">
                 Artisan coffee, single-origin roasts, signature cold brews & fresh baked pastries.
               </p>

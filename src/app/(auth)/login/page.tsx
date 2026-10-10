@@ -15,12 +15,13 @@ export default function LoginPage() {
   const { lang, toggleLang, t } = useLangStore();
   const { data: business } = useBusiness();
 
+  const defaultBusinessName = lang === "ar" ? "مقهى أروما للقهوة المختصة" : "MK Coffee Riyadh";
   const businessName =
     lang === "ar"
-      ? business?.nameAr || business?.nameEn || "POS"
-      : business?.nameEn || business?.nameAr || "POS";
+      ? business?.nameAr || business?.nameEn || defaultBusinessName
+      : business?.nameEn || business?.nameAr || defaultBusinessName;
 
-  const logoUrl = business?.logoUrl ? getMediaUrl(business.logoUrl) : null;
+  const logoUrl = business?.logoUrl ? getMediaUrl(business.logoUrl) : "/logo.png";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -77,6 +78,12 @@ export default function LoginPage() {
               <img
                 src={logoUrl}
                 alt={businessName}
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  if (target && !target.src.endsWith("/logo.png")) {
+                    target.src = "/logo.png";
+                  }
+                }}
                 className="w-full h-full object-cover"
               />
             ) : (

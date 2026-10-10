@@ -12,20 +12,19 @@ export function DynamicBranding() {
   const pathname = usePathname();
 
   useEffect(() => {
-    if (!business) return;
-
     // 1. Dynamic Document Title
+    const defaultBusinessName = lang === "ar" ? "مقهى أروما للقهوة المختصة" : "MK Coffee Riyadh";
     const businessName =
       lang === "ar"
-        ? business.nameAr || business.nameEn
-        : business.nameEn || business.nameAr;
+        ? business?.nameAr || business?.nameEn || defaultBusinessName
+        : business?.nameEn || business?.nameAr || defaultBusinessName;
 
     if (businessName) {
       document.title = businessName;
     }
 
     // 2. Dynamic Favicon & Apple Touch Icon
-    const logoUrl = business.logoUrl ? getMediaUrl(business.logoUrl) : "/favicon.svg";
+    const logoUrl = business?.logoUrl ? getMediaUrl(business.logoUrl) : "/logo.png";
 
     // Update all matching favicon links
     const existingIcons = document.querySelectorAll<HTMLLinkElement>(

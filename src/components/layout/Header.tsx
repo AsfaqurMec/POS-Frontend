@@ -107,8 +107,8 @@ export function Header() {
 
   const businessTagline =
     lang === "ar"
-      ? business?.receiptFooterAr || "نظام نقاط البيع المطور"
-      : business?.receiptFooterEn || "Point of Sale System";
+      ? business?.receiptFooterAr || business?.nameAr || "مقهى أروما للقهوة المختصة"
+      : business?.receiptFooterEn || business?.nameEn || "MK Coffee Riyadh";
 
   const currency = business?.currency || "SAR";
   const hasShift = Boolean(shiftData?.shift);
