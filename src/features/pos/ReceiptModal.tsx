@@ -131,6 +131,8 @@ export function ReceiptModal() {
         discount: invoice.discount || 0,
         tax: invoice.tax || 0,
         total: invoice.totalAmount,
+        paidAmount: (invoice.paidAmount ?? sale.paidAmount) ?? undefined,
+        changeAmount: (invoice.changeAmount ?? sale.changeAmount) ?? undefined,
         paymentMethod: invoice.paymentMethod,
         currency: t.common.sar || saleBiz?.currency || "SAR",
         footer: (lang === "ar" ? saleBiz?.receiptFooterAr : saleBiz?.receiptFooterEn) || t.receipt.thankYou,
@@ -416,6 +418,23 @@ export function ReceiptModal() {
                       <span>{t.receipt.total}:</span>
                       <span className="font-mono">{invoice.totalAmount.toFixed(2)} {currency}</span>
                     </div>
+                    {((invoice.paidAmount != null && invoice.paidAmount > 0) ||
+                      (sale.paidAmount != null && sale.paidAmount > 0)) && (
+                      <div className="pt-0.5 space-y-1">
+                        <div className="flex justify-between text-gray-700 font-medium">
+                          <span>{t.receipt.cashTendered}:</span>
+                          <span className="font-mono font-bold">
+                            {(invoice.paidAmount ?? sale.paidAmount ?? 0).toFixed(2)} {currency}
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-gray-900 font-bold">
+                          <span>{t.receipt.changeDue}:</span>
+                          <span className="font-mono font-bold">
+                            {(invoice.changeAmount ?? sale.changeAmount ?? 0).toFixed(2)} {currency}
+                          </span>
+                        </div>
+                      </div>
+                    )}
                   </>
                 );
               })()}

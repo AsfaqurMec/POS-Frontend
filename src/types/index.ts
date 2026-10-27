@@ -152,6 +152,8 @@ export interface Invoice {
   discount: number;
   tax: number;
   totalAmount: number;
+  paidAmount?: number | null;
+  changeAmount?: number | null;
   paymentMethod: PaymentMethod;
   status: "ISSUED" | "VOID";
   createdAt: string;
@@ -197,6 +199,8 @@ export interface Sale {
   discountAmount: number;
   taxAmount: number;
   totalAmount: number;
+  paidAmount?: number | null;
+  changeAmount?: number | null;
   paymentMethod: PaymentMethod;
   orderType: "TAKEAWAY" | "DINE_IN" | "DELIVERY";
   status: "COMPLETED" | "CANCELLED" | "PENDING";

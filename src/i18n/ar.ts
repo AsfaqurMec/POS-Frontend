@@ -104,6 +104,11 @@ export const ar = {
     addons: "الإضافات",
     itemTotal: "إجمالي الصنف",
     each: "للحبة",
+    cashTendered: "المبلغ المستلم",
+    changeDue: "المتبقي (الفكة)",
+    exactAmount: "المبلغ بالضبط",
+    underpaidWarning: "المبلغ المستلم أقل من الإجمالي المطلوب",
+    tenderPrompt: "المبلغ المدفوع نقدًا",
   },
   products: {
     title: "المنتجات والقائمة",
@@ -235,6 +240,8 @@ export const ar = {
     addons: "الإضافات",
     itemTotal: "إجمالي الصنف",
     each: "للحبة",
+    cashTendered: "المبلغ المستلم",
+    changeDue: "المتبقي (الفكة)",
   },
   users: {
     title: "المستخدمين وفريق العمل",

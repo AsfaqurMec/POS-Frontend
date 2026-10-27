@@ -44,6 +44,8 @@ export interface ReceiptPrintData {
   discount: number;
   tax: number;
   total: number;
+  paidAmount?: number;
+  changeAmount?: number;
   paymentMethod: string;
   currency: string;
   footer?: string;
@@ -110,6 +112,11 @@ export function generateEscPosReceipt(data: ReceiptPrintData): Uint8Array {
   commands += COMMANDS.BOLD_ON + COMMANDS.DOUBLE_HEIGHT;
   commands += `TOTAL: ${data.total.toFixed(2)} ${data.currency}\n`;
   commands += COMMANDS.BOLD_OFF + COMMANDS.NORMAL_SIZE;
+
+  if (data.paidAmount != null && data.paidAmount > 0) {
+    commands += `Cash Tendered: ${data.paidAmount.toFixed(2)} ${data.currency}\n`;
+    commands += `Change Given:  ${(data.changeAmount || 0).toFixed(2)} ${data.currency}\n`;
+  }
 
   commands += `Paid by: ${data.paymentMethod}\n`;
   commands += "==========================================\n";

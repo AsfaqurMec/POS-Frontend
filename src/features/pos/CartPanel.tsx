@@ -47,6 +47,7 @@ export function CartPanel() {
     customerName,
     customerPhone,
     isSubmitting,
+    cashTendered,
     updateCartItemQuantity,
     removeFromCart,
     setDiscount,
@@ -54,6 +55,7 @@ export function CartPanel() {
     setOrderType,
     setCustomerInfo,
     setIsSubmitting,
+    setCashTendered,
     clearCart,
     getSubtotal,
     getDiscountAmount,
@@ -247,6 +249,11 @@ export function CartPanel() {
   const handleCompleteSale = async (splitPayments?: SplitPayment[]) => {
     if (items.length === 0 || isSubmitting || isGuest) return;
 
+    if (paymentMethod === "CASH" && cashTendered !== null && cashTendered < total) {
+      setSaleError(t.pos.underpaidWarning || "Cash tendered is less than total due");
+      return;
+    }
+
     if (paymentMethod === "SPLIT" && (!splitPayments || splitPayments.length === 0)) {
       setIsSplitModalOpen(true);
       return;
@@ -258,6 +265,14 @@ export function CartPanel() {
     const isOffline = typeof navigator !== "undefined" && !navigator.onLine;
 
     try {
+      let paidAmount: number | undefined = undefined;
+      let changeAmount: number | undefined = undefined;
+
+      if (paymentMethod === "CASH") {
+        paidAmount = cashTendered !== null && cashTendered > 0 ? cashTendered : total;
+        changeAmount = paidAmount >= total ? Number((paidAmount - total).toFixed(2)) : 0;
+      }
+
       const payload: any = {
         items: items.map((i) => ({
           itemId: i.item.id,
@@ -272,6 +287,8 @@ export function CartPanel() {
         customerName: customerName.trim() || undefined,
         customerPhone: customerPhone.trim() || undefined,
         tag: pagerTag.trim() || undefined,
+        paidAmount,
+        changeAmount,
       };
 
       if (splitPayments && splitPayments.length > 0) {
@@ -287,6 +304,8 @@ export function CartPanel() {
             id: offId,
             orderNumber: `ORD-${offId.slice(0, 6).toUpperCase()}`,
             totalAmount: total,
+            paidAmount,
+            changeAmount,
             paymentMethod: payload.paymentMethod,
             orderType,
             status: "COMPLETED (OFFLINE)",
@@ -302,6 +321,8 @@ export function CartPanel() {
             discount: discountAmount,
             tax: taxAmount,
             totalAmount: total,
+            paidAmount,
+            changeAmount,
             paymentMethod: payload.paymentMethod,
           },
           business: {
@@ -336,6 +357,8 @@ export function CartPanel() {
           total: result.sale?.totalAmount || total,
           cashierName: result.invoice?.cashierName,
           paymentMethod: payload.paymentMethod,
+          paidAmount: result.sale?.paidAmount ?? paidAmount,
+          changeAmount: result.sale?.changeAmount ?? changeAmount,
         },
       });
 
@@ -349,6 +372,8 @@ export function CartPanel() {
               invoiceNumber: result.invoice?.invoiceNumber || "INV-000",
               total: result.sale?.totalAmount || total,
               cashierName: result.invoice?.cashierName,
+              paidAmount: result.sale?.paidAmount ?? paidAmount,
+              changeAmount: result.sale?.changeAmount ?? changeAmount,
               timestamp: Date.now(),
             })
           );
@@ -832,36 +857,151 @@ export function CartPanel() {
         })}
       </div>
 
-      {/* 8. Complete Payment Button */}
-      <button
-        type="button"
-        onClick={() => handleCompleteSale()}
-        disabled={items.length === 0 || isSubmitting || isGuest}
-        className={`w-full py-3.5 px-5 rounded-xl font-bold text-sm shadow-md transition-all flex items-center justify-between shrink-0 ${
-          items.length > 0 && !isSubmitting && !isGuest
-            ? "bg-[#2B1D16] hover:bg-[#3D271D] dark:bg-amber-600 dark:hover:bg-amber-500 text-white active:scale-[0.99] cursor-pointer"
-            : "bg-[#A69485]/40 text-white/80 cursor-not-allowed shadow-none"
-        }`}
-      >
-        {isSubmitting ? (
-          <div className="w-full flex items-center justify-center gap-2">
-            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-            <span>{t.pos.processingSale || "Processing..."}</span>
-          </div>
-        ) : isGuest ? (
-          <div className="w-full text-center text-xs tracking-wider uppercase font-bold text-amber-900 dark:text-amber-200">
-            Guest Mode (View Only)
-          </div>
-        ) : (
-          <>
-            <CreditCard className="w-4 h-4 text-amber-200" />
-            <span className="text-sm font-bold tracking-wide">
-              {t.pos.completeSale || "Complete Payment"}
+      {/* 7.5. Cash Tendered & Change Due Section (when Cash is selected) */}
+      {paymentMethod === "CASH" && items.length > 0 && (
+        <div className="mb-3 p-2.5 rounded-xl bg-[#FAF7F2] dark:bg-[#251810] border border-[#E8DFD7] dark:border-[#382418] space-y-2 shrink-0">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold text-[#6E5448] dark:text-warmgray-300 flex items-center gap-1.5">
+              <Banknote className="w-3.5 h-3.5 text-amber-700 dark:text-amber-400" />
+              <span>{t.pos.tenderPrompt || "Cash Tendered"}</span>
             </span>
-            <ArrowIcon className="w-4 h-4 text-amber-200" />
-          </>
-        )}
-      </button>
+            <button
+              type="button"
+              onClick={() => setCashTendered(total)}
+              className="text-[10px] font-bold text-amber-800 dark:text-amber-400 hover:underline px-1.5 py-0.5 rounded bg-amber-100/70 dark:bg-amber-900/40 transition"
+            >
+              {t.pos.exactAmount || "Exact"} ({total.toFixed(2)})
+            </button>
+          </div>
+
+          {/* Tendered Input with Currency Prefix & Clear */}
+          <div className="relative flex items-center">
+            <span className="absolute left-2.5 rtl:left-auto rtl:right-2.5 text-xs font-bold text-warmgray-500 font-mono select-none">
+              SAR
+            </span>
+            <input
+              type="number"
+              step="any"
+              min="0"
+              value={cashTendered !== null ? cashTendered : ""}
+              onChange={(e) => {
+                const val = e.target.value === "" ? null : parseFloat(e.target.value);
+                setCashTendered(val !== null && !isNaN(val) ? val : null);
+              }}
+              placeholder={total.toFixed(2)}
+              className="w-full pl-12 pr-8 rtl:pl-8 rtl:pr-12 py-1.5 rounded-lg bg-white dark:bg-[#1E140E] border border-warmgray-300 dark:border-warmgray-700 text-sm font-bold text-[#231815] dark:text-white font-mono focus:outline-none focus:ring-2 focus:ring-amber-500"
+            />
+            {cashTendered !== null && (
+              <button
+                type="button"
+                onClick={() => setCashTendered(null)}
+                className="absolute right-2 rtl:right-auto rtl:left-2 p-1 text-warmgray-400 hover:text-warmgray-700 dark:hover:text-white"
+                title="Reset to Exact"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+
+          {/* Quick Denomination Chips */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <button
+              type="button"
+              onClick={() => setCashTendered(total)}
+              className={`px-2 py-1 rounded-md text-[10px] font-bold font-mono transition ${
+                cashTendered === total || cashTendered === null
+                  ? "bg-[#2B1D16] dark:bg-amber-600 text-white shadow-xs"
+                  : "bg-white dark:bg-[#1E140E] border border-warmgray-200 dark:border-warmgray-700 text-warmgray-700 dark:text-warmgray-300 hover:border-amber-500"
+              }`}
+            >
+              Exact
+            </button>
+            {(() => {
+              const presets = new Set<number>();
+              const next5 = Math.ceil(total / 5) * 5;
+              if (next5 > total) presets.add(next5);
+              const next10 = Math.ceil(total / 10) * 10;
+              if (next10 > total) presets.add(next10);
+              [20, 50, 100, 200, 500].forEach((v) => {
+                if (v > total) presets.add(v);
+              });
+              return Array.from(presets)
+                .slice(0, 4)
+                .map((val) => (
+                  <button
+                    key={val}
+                    type="button"
+                    onClick={() => setCashTendered(val)}
+                    className={`px-2 py-1 rounded-md text-[10px] font-bold font-mono transition ${
+                      cashTendered === val
+                        ? "bg-[#2B1D16] dark:bg-amber-600 text-white shadow-xs"
+                        : "bg-white dark:bg-[#1E140E] border border-warmgray-200 dark:border-warmgray-700 text-warmgray-700 dark:text-warmgray-300 hover:border-amber-500"
+                    }`}
+                  >
+                    SAR {val}
+                  </button>
+                ));
+            })()}
+          </div>
+
+          {/* Status: Change Due or Underpaid warning */}
+          {cashTendered !== null && cashTendered < total ? (
+            <div className="p-2 rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 text-red-700 dark:text-red-300 text-xs font-semibold flex items-center justify-between">
+              <span>{t.pos.underpaidWarning || "Underpaid"}</span>
+              <span className="font-mono font-bold">
+                -SAR {(total - cashTendered).toFixed(2)}
+              </span>
+            </div>
+          ) : (
+            <div className="p-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900/60 text-emerald-800 dark:text-emerald-300 text-xs font-bold flex items-center justify-between">
+              <span>{t.pos.changeDue || "Change Due"}</span>
+              <span className="text-sm font-black font-mono">
+                SAR {(cashTendered !== null && cashTendered >= total ? cashTendered - total : 0).toFixed(2)}
+              </span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 8. Complete Payment Button */}
+      {(() => {
+        const isUnderpaid = paymentMethod === "CASH" && cashTendered !== null && cashTendered < total;
+        return (
+          <button
+            type="button"
+            onClick={() => handleCompleteSale()}
+            disabled={items.length === 0 || isSubmitting || isGuest || isUnderpaid}
+            className={`w-full py-3.5 px-5 rounded-xl font-bold text-sm shadow-md transition-all flex items-center justify-between shrink-0 ${
+              items.length > 0 && !isSubmitting && !isGuest && !isUnderpaid
+                ? "bg-[#2B1D16] hover:bg-[#3D271D] dark:bg-amber-600 dark:hover:bg-amber-500 text-white active:scale-[0.99] cursor-pointer"
+                : "bg-[#A69485]/40 text-white/80 cursor-not-allowed shadow-none"
+            }`}
+          >
+            {isSubmitting ? (
+              <div className="w-full flex items-center justify-center gap-2">
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <span>{t.pos.processingSale || "Processing..."}</span>
+              </div>
+            ) : isGuest ? (
+              <div className="w-full text-center text-xs tracking-wider uppercase font-bold text-amber-900 dark:text-amber-200">
+                Guest Mode (View Only)
+              </div>
+            ) : isUnderpaid ? (
+              <div className="w-full text-center text-xs tracking-wider uppercase font-bold text-red-100">
+                {t.pos.underpaidWarning || "Underpaid"} (-SAR {(total - (cashTendered || 0)).toFixed(2)})
+              </div>
+            ) : (
+              <>
+                <CreditCard className="w-4 h-4 text-amber-200" />
+                <span className="text-sm font-bold tracking-wide">
+                  {t.pos.completeSale || "Complete Payment"}
+                </span>
+                <ArrowIcon className="w-4 h-4 text-amber-200" />
+              </>
+            )}
+          </button>
+        );
+      })()}
 
       {/* Discount Modal */}
       {isDiscountModalOpen && (

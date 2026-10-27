@@ -104,6 +104,11 @@ export const en = {
     addons: "Add-ons",
     itemTotal: "Item Total",
     each: "ea",
+    cashTendered: "Cash Tendered",
+    changeDue: "Change Due",
+    exactAmount: "Exact Amount",
+    underpaidWarning: "Amount tendered is less than total due",
+    tenderPrompt: "Amount Tendered",
   },
   products: {
     title: "Products & Menu",
@@ -235,6 +240,8 @@ export const en = {
     addons: "Add-ons",
     itemTotal: "Item Total",
     each: "ea",
+    cashTendered: "Cash Tendered",
+    changeDue: "Change Due",
   },
   users: {
     title: "Staff & Users",

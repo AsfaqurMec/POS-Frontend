@@ -10,6 +10,7 @@ interface CartState {
   customerName: string;
   customerPhone: string;
   isSubmitting: boolean;
+  cashTendered: number | null;
 
   // Actions
   addToCart: (item: Item, variant: ProductVariant | null, options: CartItemOption[], quantity?: number) => void;
@@ -21,6 +22,7 @@ interface CartState {
   setOrderType: (type: "TAKEAWAY" | "DINE_IN" | "DELIVERY") => void;
   setCustomerInfo: (name: string, phone: string) => void;
   setIsSubmitting: (submitting: boolean) => void;
+  setCashTendered: (amount: number | null) => void;
   clearCart: () => void;
 
   // Computed helpers
@@ -39,6 +41,7 @@ export const useCartStore = create<CartState>((set, get) => ({
   customerName: "",
   customerPhone: "",
   isSubmitting: false,
+  cashTendered: null,
 
   addToCart: (item, variant, options, quantity = 1) => {
     const qty = Math.max(1, quantity);
@@ -146,6 +149,7 @@ export const useCartStore = create<CartState>((set, get) => ({
     set({ isSubmitting: submitting });
   },
 
+  setCashTendered: (amount) => set({ cashTendered: amount }),
   clearCart: () => {
     set({
       items: [],
@@ -156,6 +160,7 @@ export const useCartStore = create<CartState>((set, get) => ({
       customerName: "",
       customerPhone: "",
       isSubmitting: false,
+      cashTendered: null,
     });
   },
 

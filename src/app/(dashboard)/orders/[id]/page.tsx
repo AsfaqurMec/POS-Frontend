@@ -381,6 +381,23 @@ export default function OrderDetailPage() {
                 {sale.totalAmount.toFixed(2)} SAR
               </span>
             </div>
+
+            {((sale.paidAmount != null && sale.paidAmount > 0) || (invoice?.paidAmount != null && invoice.paidAmount > 0)) && (
+              <div className="pt-2 border-t border-dashed border-warmgray-200 dark:border-warmgray-700 space-y-1">
+                <div className="flex justify-between text-warmgray-700 dark:text-warmgray-300 font-medium">
+                  <span>{t.receipt.cashTendered}</span>
+                  <span className="font-semibold text-warmgray-900 dark:text-white">
+                    {(sale.paidAmount ?? invoice?.paidAmount ?? 0).toFixed(2)} SAR
+                  </span>
+                </div>
+                <div className="flex justify-between text-emerald-600 dark:text-emerald-400 font-bold">
+                  <span>{t.receipt.changeDue}</span>
+                  <span className="font-mono">
+                    {(sale.changeAmount ?? invoice?.changeAmount ?? 0).toFixed(2)} SAR
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

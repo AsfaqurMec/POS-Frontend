@@ -41,6 +41,8 @@ export interface CfdBroadcastMessage {
     invoiceNumber?: string;
     cashierName?: string;
     paymentMethod?: string;
+    paidAmount?: number;
+    changeAmount?: number;
   };
 }
 

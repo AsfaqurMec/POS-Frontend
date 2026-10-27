@@ -31,6 +31,8 @@ export default function CustomerFacingDisplayPage() {
     invoiceNumber: string;
     total: number;
     cashierName?: string;
+    paidAmount?: number;
+    changeAmount?: number;
   } | null>(null);
 
   const [currentTime, setCurrentTime] = useState("");
@@ -123,6 +125,8 @@ export default function CustomerFacingDisplayPage() {
           invoiceNumber: msg.payload.invoiceNumber || "",
           total: msg.payload.total || 0,
           cashierName: msg.payload.cashierName,
+          paidAmount: msg.payload.paidAmount,
+          changeAmount: msg.payload.changeAmount,
         });
 
         if (typeof window !== "undefined") {
@@ -254,23 +258,46 @@ export default function CustomerFacingDisplayPage() {
               </p>
             </div>
 
-            <div className="p-4 rounded-xl bg-[#FBF9F5] border border-[#EADBCE] flex items-center justify-between text-xs">
-              <div className="text-start">
-                <span className="text-[10px] font-bold text-[#8A7160] uppercase tracking-wider block">
-                  Invoice / رقم الفاتورة
-                </span>
-                <span className="font-bold text-[#231815] font-mono">
-                  {completedSale.invoiceNumber}
-                </span>
+            <div className="p-4 rounded-xl bg-[#FBF9F5] border border-[#EADBCE] space-y-2 text-xs">
+              <div className="flex items-center justify-between">
+                <div className="text-start">
+                  <span className="text-[10px] font-bold text-[#8A7160] uppercase tracking-wider block">
+                    Invoice / رقم الفاتورة
+                  </span>
+                  <span className="font-bold text-[#231815] font-mono">
+                    {completedSale.invoiceNumber}
+                  </span>
+                </div>
+                <div className="text-end">
+                  <span className="text-[10px] font-bold text-[#8A7160] uppercase tracking-wider block">
+                    Total Due / المبلغ المطلوب
+                  </span>
+                  <span className="text-lg font-black text-[#231815] font-mono">
+                    {completedSale.total.toFixed(2)} {currency}
+                  </span>
+                </div>
               </div>
-              <div className="text-end">
-                <span className="text-[10px] font-bold text-[#8A7160] uppercase tracking-wider block">
-                  Amount Paid / المبلغ المدفوع
-                </span>
-                <span className="text-lg font-black text-emerald-600 font-mono">
-                  {completedSale.total.toFixed(2)} {currency}
-                </span>
-              </div>
+
+              {completedSale.paidAmount != null && completedSale.paidAmount > 0 && (
+                <div className="pt-2 border-t border-[#EADBCE] flex items-center justify-between text-xs">
+                  <div className="text-start">
+                    <span className="text-[10px] font-bold text-[#8A7160] uppercase tracking-wider block">
+                      Cash Given / المبلغ المستلم
+                    </span>
+                    <span className="font-bold text-gray-800 font-mono">
+                      {completedSale.paidAmount.toFixed(2)} {currency}
+                    </span>
+                  </div>
+                  <div className="text-end">
+                    <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider block">
+                      Change Returned / الفكة المستحقة
+                    </span>
+                    <span className="text-xl font-black text-emerald-600 font-mono">
+                      {(completedSale.changeAmount || 0).toFixed(2)} {currency}
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         ) : hasItems ? (
