@@ -330,7 +330,7 @@ export function Header() {
             </div>
             <div className="hidden lg:block text-start leading-tight">
               <p className="text-[9px] uppercase tracking-wider text-warmgray-400 font-bold">
-                {user?.role === "GUEST" ? "Guest (View Only)" : user?.role === "ADMIN" ? "Manager" : "Cashier"}
+                {user?.role === "GUEST" ? "Guest" : user?.role === "ADMIN" ? "Manager" : "Cashier"}
               </p>
               <p className="text-xs font-bold text-white truncate max-w-[110px]">
                 {user?.name || (user?.role === "GUEST" ? "Guest" : "Cashier")}

@@ -72,12 +72,12 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             <Eye className="w-4 h-4 shrink-0 text-black" />
             <span>
               {lang === "ar"
-                ? "أنت في وضع الزائر (عرض فقط). تم تعطيل إنشاء أو تعديل أو حفظ أو حذف أي بيانات."
-                : "Guest Mode (View-Only Active) — Creating, modifying, and deleting data is disabled."}
+                ? "أنت في وضع الزائر — يمكنك استكشاف نقاط البيع وإنشاء الطلبات. إدارة المنتجات والإعدادات للعرض فقط."
+                : "Guest Mode Active — You can place orders and explore POS. Catalog and settings management are view-only."}
             </span>
           </div>
           <span className="text-[10px] bg-black/20 text-black font-extrabold px-2 py-0.5 rounded uppercase tracking-wider">
-            {lang === "ar" ? "عرض فقط" : "View Only"}
+            {lang === "ar" ? "وضع الزائر" : "Guest Mode"}
           </span>
         </div>
       )}

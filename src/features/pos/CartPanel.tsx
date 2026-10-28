@@ -65,7 +65,6 @@ export function CartPanel() {
   const { openVariationModal, openReceiptModal } = usePosStore();
   const { lang, t, dir } = useLangStore();
   const { user } = useAuthStore();
-  const isGuest = user?.role === "GUEST";
   const { data: business } = useBusiness();
   const { data: heldOrders } = useHeldOrders();
   const holdOrderMutation = useHoldOrder();
@@ -217,7 +216,7 @@ export function CartPanel() {
   };
 
   const handleHoldOrder = async () => {
-    if (items.length === 0 || isHolding || isGuest) return;
+    if (items.length === 0 || isHolding) return;
     setIsHolding(true);
     try {
       const snapshot = JSON.stringify({
@@ -247,7 +246,7 @@ export function CartPanel() {
   };
 
   const handleCompleteSale = async (splitPayments?: SplitPayment[]) => {
-    if (items.length === 0 || isSubmitting || isGuest) return;
+    if (items.length === 0 || isSubmitting) return;
 
     if (paymentMethod === "CASH" && cashTendered !== null && cashTendered < total) {
       setSaleError(t.pos.underpaidWarning || "Cash tendered is less than total due");
@@ -415,11 +414,11 @@ export function CartPanel() {
   const ArrowIcon = dir === "rtl" ? ChevronLeft : ArrowRight;
 
   return (
-    <div className="w-full lg:w-[380px] xl:w-[410px] 2xl:w-[410px] bg-white dark:bg-[#1E140E] rounded-xl border border-[#E8DFD7] dark:border-[#382418] flex flex-col h-full shrink-0 shadow-sm p-4 overflow-hidden select-none">
+    <div className="w-full lg:w-[380px] xl:w-[410px] 2xl:w-[410px] bg-white dark:bg-[#1E140E] rounded-xl border border-[#E8DFD7] dark:border-[#382418] flex flex-col h-full shrink-0 shadow-sm p-3 sm:p-3.5 overflow-y-auto overflow-x-hidden select-none">
       {/* 1. Panel Header: Current Order + Park/Recall + Clear Button */}
-      <div className="flex items-center justify-between pb-3 border-b border-[#F0EAE4] dark:border-[#2D1D14] shrink-0">
+      <div className="flex items-center justify-between pb-2.5 border-b border-[#F0EAE4] dark:border-[#2D1D14] shrink-0">
         <div className="flex items-center gap-2">
-          <h2 className="text-lg font-black text-[#1C140E] dark:text-white">
+          <h2 className="text-base font-black text-[#1C140E] dark:text-white">
             {t.pos.currentOrder || "Current Order"}
           </h2>
           <button
@@ -439,21 +438,22 @@ export function CartPanel() {
               <button
                 type="button"
                 onClick={handleHoldOrder}
-                disabled={isHolding || isGuest}
-                className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/40 dark:hover:bg-amber-900/40 text-amber-800 dark:text-amber-300 text-xs font-bold transition border border-amber-200 dark:border-amber-800/60 disabled:opacity-50 disabled:cursor-not-allowed"
-                title={isGuest ? "Action not allowed in Guest Mode" : "Hold / Park this order (F4)"}
+                disabled={isHolding}
+                className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/40 dark:hover:bg-amber-900/40 text-amber-800 dark:text-amber-300 text-xs font-bold transition border border-amber-200 dark:border-amber-800/60 disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Hold / Park this order (F4)"
               >
                 <Layers className="w-3.5 h-3.5" />
                 <span>{isHolding ? "Holding..." : "Hold"}</span>
               </button>
 
               <button
+                type="button"
                 onClick={() => {
                   if (confirm(t.pos.clearCartConfirm || "Are you sure you want to clear the current order?")) {
                     clearCart();
                   }
                 }}
-                className="p-1.5 rounded-lg text-warmgray-500 hover:text-red-600 transition"
+                className="p-1 rounded-lg text-warmgray-400 hover:text-red-600 transition"
                 title="Clear Cart"
               >
                 <Trash2 className="w-3.5 h-3.5" />
@@ -464,13 +464,13 @@ export function CartPanel() {
       </div>
 
       {/* 2. Order Type Segmented Pills: Dine In | Take Away | Delivery */}
-      <div className="grid grid-cols-3 gap-1.5 p-1 bg-[#F5EFE6] dark:bg-[#281A12] rounded-2xl my-3 shrink-0">
+      <div className="grid grid-cols-3 gap-1 p-0.5 bg-[#F5EFE6] dark:bg-[#281A12] rounded-xl my-2 shrink-0">
         <button
           type="button"
           onClick={() => setOrderType("DINE_IN")}
-          className={`py-2 text-xs font-bold rounded-xl transition ${
+          className={`py-1.5 text-xs font-bold rounded-lg transition ${
             orderType === "DINE_IN"
-              ? "bg-[#2B1D16] dark:bg-amber-600 text-white shadow-sm"
+              ? "bg-[#2B1D16] dark:bg-amber-600 text-white shadow-xs"
               : "text-[#6E5448] dark:text-warmgray-400 hover:text-[#2B1D16] dark:hover:text-white"
           }`}
         >
@@ -480,9 +480,9 @@ export function CartPanel() {
         <button
           type="button"
           onClick={() => setOrderType("TAKEAWAY")}
-          className={`py-2 text-xs font-bold rounded-xl transition ${
+          className={`py-1.5 text-xs font-bold rounded-lg transition ${
             orderType === "TAKEAWAY"
-              ? "bg-[#2B1D16] dark:bg-amber-600 text-white shadow-sm"
+              ? "bg-[#2B1D16] dark:bg-amber-600 text-white shadow-xs"
               : "text-[#6E5448] dark:text-warmgray-400 hover:text-[#2B1D16] dark:hover:text-white"
           }`}
         >
@@ -492,9 +492,9 @@ export function CartPanel() {
         <button
           type="button"
           onClick={() => setOrderType("DELIVERY")}
-          className={`py-2 text-xs font-bold rounded-xl transition ${
+          className={`py-1.5 text-xs font-bold rounded-lg transition ${
             orderType === "DELIVERY"
-              ? "bg-[#2B1D16] dark:bg-amber-600 text-white shadow-sm"
+              ? "bg-[#2B1D16] dark:bg-amber-600 text-white shadow-xs"
               : "text-[#6E5448] dark:text-warmgray-400 hover:text-[#2B1D16] dark:hover:text-white"
           }`}
         >
@@ -505,42 +505,37 @@ export function CartPanel() {
       {/* 3. Customer Info Section */}
       <div className="mb-2 shrink-0">
         {!showCustomerInput ? (
-          <div className="flex items-center justify-between p-2 rounded-2xl bg-[#FAF7F2] dark:bg-[#251810] border border-[#E8DFD7] dark:border-[#382418] hover:border-amber-600/40 transition">
+          <div className="flex items-center justify-between py-1 px-2.5 rounded-xl bg-[#FAF7F2] dark:bg-[#251810] border border-[#E8DFD7] dark:border-[#382418] hover:border-amber-600/40 transition">
             <div className="flex items-center gap-2 min-w-0">
-              <div className="w-7 h-7 rounded-xl bg-[#2B1D16] dark:bg-amber-600 text-amber-200 dark:text-white flex items-center justify-center shrink-0">
-                <UserIcon className="w-3.5 h-3.5" />
+              <div className="w-6 h-6 rounded-lg bg-[#2B1D16] dark:bg-amber-600 text-amber-200 dark:text-white flex items-center justify-center shrink-0">
+                <UserIcon className="w-3 h-3" />
               </div>
               <div className="min-w-0">
                 {customerName ? (
-                  <div>
-                    <span className="text-xs font-bold text-[#231815] dark:text-white truncate block">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-bold text-[#231815] dark:text-white truncate">
                       {customerName}
                     </span>
                     {customerPhone && (
-                      <span className="text-[10px] text-warmgray-600 dark:text-warmgray-400 block font-mono font-medium">
-                        {customerPhone}
+                      <span className="text-[10px] text-warmgray-500 font-mono">
+                        ({customerPhone})
                       </span>
                     )}
                   </div>
                 ) : (
-                  <div>
-                    <span className="text-xs font-bold text-warmgray-700 dark:text-warmgray-300 block">
-                      {t.pos.customerDetails || "Customer Information"}
-                    </span>
-                    <span className="text-[10px] text-warmgray-600 dark:text-warmgray-400 font-medium block">
-                      Optional · Name & Phone
-                    </span>
-                  </div>
+                  <span className="text-xs font-semibold text-warmgray-700 dark:text-warmgray-300">
+                    {t.pos.customerDetails || "Customer Info (Optional)"}
+                  </span>
                 )}
               </div>
             </div>
 
-            <div className="flex items-center gap-1.5 shrink-0">
+            <div className="flex items-center gap-1 shrink-0">
               {customerName && (
                 <button
                   type="button"
                   onClick={() => setCustomerInfo("", "")}
-                  className="p-1 rounded-lg text-warmgray-500 hover:text-red-600 dark:text-warmgray-400 transition"
+                  className="p-1 rounded-lg text-warmgray-400 hover:text-red-600 transition"
                   title="Clear Customer Info"
                 >
                   <X className="w-3.5 h-3.5" />
@@ -549,7 +544,7 @@ export function CartPanel() {
               <button
                 type="button"
                 onClick={() => setShowCustomerInput(true)}
-                className="px-2.5 py-1 text-[11px] font-bold text-white bg-[#2B1D16] hover:bg-[#3D271D] dark:bg-amber-600 dark:hover:bg-amber-500 rounded-xl transition shadow-2xs"
+                className="px-2 py-0.5 text-[11px] font-bold text-white bg-[#2B1D16] hover:bg-[#3D271D] dark:bg-amber-600 dark:hover:bg-amber-500 rounded-lg transition shadow-2xs"
               >
                 {customerName
                   ? lang === "ar"
@@ -631,21 +626,21 @@ export function CartPanel() {
       </div>
 
       {/* 4. Table Header: Item | Qty | Price */}
-      <div className="grid grid-cols-12 text-[11px] font-bold text-warmgray-700 dark:text-warmgray-300 uppercase tracking-wider py-1.5 border-b border-[#F0EAE4] dark:border-[#2D1D14] px-1 shrink-0">
+      <div className="grid grid-cols-12 text-[10px] font-bold text-warmgray-500 dark:text-warmgray-400 uppercase tracking-wider py-1 border-b border-[#F0EAE4] dark:border-[#2D1D14] px-1 shrink-0">
         <div className="col-span-6">{t.pos.item || "Item"}</div>
         <div className="col-span-3 text-center">{t.pos.qty || "Qty"}</div>
         <div className="col-span-3 text-end">{t.pos.price || "Price"}</div>
       </div>
 
       {/* 5. Cart Items Table List */}
-      <div className="flex-1 overflow-y-auto no-scrollbar space-y-2 py-1 divide-y divide-[#F5EFE6] dark:divide-[#2D1D14]">
+      <div className="flex-1 min-h-[140px] max-h-[380px] overflow-y-auto space-y-1 py-1 pr-1 divide-y divide-[#F5EFE6] dark:divide-[#2D1D14]">
         {items.length === 0 ? (
-          <div className="h-full flex flex-col items-center justify-center text-center p-6 text-warmgray-600 dark:text-warmgray-400">
-            <ShoppingBag className="w-12 h-12 mb-2 opacity-30 stroke-[1.5]" />
-            <p className="font-bold text-sm text-[#5C3E2E] dark:text-warmgray-200">
+          <div className="h-full min-h-[120px] flex flex-col items-center justify-center text-center p-4 text-warmgray-500 dark:text-warmgray-400">
+            <ShoppingBag className="w-9 h-9 mb-1.5 opacity-30 stroke-[1.5]" />
+            <p className="font-bold text-xs text-[#5C3E2E] dark:text-warmgray-200">
               {t.pos.emptyCartTitle || "No items in order"}
             </p>
-            <p className="text-xs text-warmgray-600 dark:text-warmgray-400 mt-0.5 font-medium">
+            <p className="text-[10px] text-warmgray-500 dark:text-warmgray-400 mt-0.5 font-medium">
               {t.pos.emptyCartDesc || "Click items from the menu to add"}
             </p>
           </div>
@@ -658,13 +653,13 @@ export function CartPanel() {
             return (
               <div
                 key={cartItem.cartItemId}
-                className="grid grid-cols-12 items-start py-2.5 px-1 hover:bg-[#FAF7F2]/60 dark:hover:bg-[#251810]/60 rounded-xl transition"
+                className="grid grid-cols-12 items-start py-2 px-1 hover:bg-[#FAF7F2]/60 dark:hover:bg-[#251810]/60 rounded-xl transition"
               >
                 {/* Item Column: Thumbnail + Title + Base Price + Add-on Prices */}
                 <div className="col-span-6 flex items-start gap-2 min-w-0 pr-1">
                   <div
                     onClick={() => handleEditItem(cartItem)}
-                    className="w-10 h-10 rounded-xl overflow-hidden shrink-0 bg-[#F5EFE6] dark:bg-[#281A12] border border-[#E8DFD7] dark:border-[#382418] cursor-pointer flex items-center justify-center shadow-2xs hover:opacity-90 transition mt-0.5"
+                    className="w-9 h-9 rounded-lg overflow-hidden shrink-0 bg-[#F5EFE6] dark:bg-[#281A12] border border-[#E8DFD7] dark:border-[#382418] cursor-pointer flex items-center justify-center shadow-2xs hover:opacity-90 transition mt-0.5"
                   >
                     {cartItem.item.imageUrl ? (
                       <img
@@ -673,7 +668,7 @@ export function CartPanel() {
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <Coffee className="w-5 h-5 text-amber-800 dark:text-amber-400" />
+                      <Coffee className="w-4 h-4 text-amber-800 dark:text-amber-400" />
                     )}
                   </div>
                   <div
@@ -686,7 +681,7 @@ export function CartPanel() {
                     </h4>
 
                     {/* Base Price Display */}
-                    <div className="text-[10px] text-warmgray-700 dark:text-warmgray-400 mt-0.5 flex items-center gap-1 font-medium">
+                    <div className="text-[10px] text-warmgray-600 dark:text-warmgray-400 mt-0.5 flex items-center gap-1 font-medium">
                       <span>{t.pos.basePrice || "Base"}:</span>
                       <span className="font-semibold text-warmgray-800 dark:text-amber-300">
                         SAR {basePrice.toFixed(2)}
@@ -701,7 +696,7 @@ export function CartPanel() {
                           return (
                             <div
                               key={optIdx}
-                              className="text-[10px] text-warmgray-700 dark:text-warmgray-300 flex items-center justify-between gap-1 leading-tight bg-[#FAF7F2] dark:bg-[#251810] px-1.5 py-0.5 rounded border border-[#EFE8DF] dark:border-[#382418]"
+                              className="text-[9px] text-warmgray-700 dark:text-warmgray-300 flex items-center justify-between gap-1 leading-tight bg-[#FAF7F2] dark:bg-[#251810] px-1.5 py-0.5 rounded border border-[#EFE8DF] dark:border-[#382418]"
                             >
                               <span className="truncate">+ {optName}</span>
                               <span className="font-bold text-amber-800 dark:text-amber-400 shrink-0 font-mono text-[9px]">
@@ -718,7 +713,7 @@ export function CartPanel() {
                 </div>
 
                 {/* Qty Column: Stepper Pill [ - ] [ 1 ] [ + ] */}
-                <div className="col-span-3 flex items-center justify-center pt-1">
+                <div className="col-span-3 flex items-center justify-center pt-0.5">
                   <div className="flex items-center border border-[#E0D7CE] dark:border-[#382418] rounded-lg bg-[#FAF7F2] dark:bg-[#251810] px-1 py-0.5">
                     <button
                       type="button"
@@ -741,7 +736,7 @@ export function CartPanel() {
                 </div>
 
                 {/* Price Column: SAR 12.00 + Unit Price (if qty > 1) + Remove × */}
-                <div className="col-span-3 flex flex-col items-end justify-start gap-0.5 pt-1">
+                <div className="col-span-3 flex flex-col items-end justify-start gap-0.5 pt-0.5">
                   <div className="flex items-center justify-end gap-1.5 w-full">
                     <span className="font-bold text-xs text-[#231815] dark:text-amber-300 whitespace-nowrap">
                       SAR {cartItem.lineTotal.toFixed(2)}
@@ -749,14 +744,14 @@ export function CartPanel() {
                     <button
                       type="button"
                       onClick={() => removeFromCart(cartItem.cartItemId)}
-                      className="text-warmgray-500 hover:text-red-600 transition p-0.5"
+                      className="text-warmgray-400 hover:text-red-600 transition p-0.5"
                       title="Remove item"
                     >
                       <X className="w-3.5 h-3.5" />
                     </button>
                   </div>
                   {cartItem.quantity > 1 && (
-                    <span className="text-[9px] text-warmgray-600 dark:text-warmgray-400 font-mono">
+                    <span className="text-[9px] text-warmgray-500 dark:text-warmgray-400 font-mono">
                       (SAR {cartItem.unitPrice.toFixed(2)} {t.pos.each || "ea"})
                     </span>
                   )}
@@ -775,15 +770,15 @@ export function CartPanel() {
       )}
 
       {/* 6. Financial Summary */}
-      <div className="pt-3 border-t border-[#F0EAE4] dark:border-[#2D1D14] space-y-1 shrink-0">
-        <div className="flex justify-between text-xs text-warmgray-700 dark:text-warmgray-300 font-medium">
+      <div className="pt-2 border-t border-[#F0EAE4] dark:border-[#2D1D14] space-y-1 shrink-0">
+        <div className="flex justify-between text-xs text-warmgray-600 dark:text-warmgray-400 font-medium">
           <span>{t.pos.subtotal || "Subtotal"}</span>
           <span className="font-bold text-[#231815] dark:text-warmgray-200">
             SAR {subtotal.toFixed(2)}
           </span>
         </div>
 
-        <div className="flex justify-between text-xs text-warmgray-700 dark:text-warmgray-300 font-medium">
+        <div className="flex justify-between text-xs text-warmgray-600 dark:text-warmgray-400 font-medium">
           <span>
             {t.pos.tax || "VAT"} ({business?.taxRate || 15}%)
           </span>
@@ -793,7 +788,7 @@ export function CartPanel() {
         </div>
 
         {/* Discount Row */}
-        <div className="flex justify-between items-center text-xs text-warmgray-700 dark:text-warmgray-300 font-medium">
+        <div className="flex justify-between items-center text-xs text-warmgray-600 dark:text-warmgray-400 font-medium">
           <button
             type="button"
             onClick={() => {
@@ -818,18 +813,18 @@ export function CartPanel() {
         </div>
 
         {/* Total Row */}
-        <div className="flex justify-between items-baseline pt-2 mt-1 border-t border-[#F0EAE4] dark:border-[#2D1D14]">
-          <span className="text-lg font-bold text-[#1C140E] dark:text-white">
+        <div className="flex justify-between items-baseline pt-1.5 mt-1 border-t border-[#F0EAE4] dark:border-[#2D1D14]">
+          <span className="text-base font-bold text-[#1C140E] dark:text-white">
             {t.pos.total || "Total"}
           </span>
-          <span className="text-2xl font-black text-[#1C140E] dark:text-amber-300">
+          <span className="text-xl font-black text-[#1C140E] dark:text-amber-300 font-mono">
             SAR {total.toFixed(2)}
           </span>
         </div>
       </div>
 
       {/* 7. Payment Method Grid */}
-      <div className="grid grid-cols-4 gap-1.5 my-3 shrink-0">
+      <div className="grid grid-cols-4 gap-1.5 my-2 shrink-0">
         {paymentButtons.map((btn) => {
           const isSelected = paymentMethod === btn.id;
           const Icon = btn.icon;
@@ -844,7 +839,7 @@ export function CartPanel() {
                   setIsSplitModalOpen(true);
                 }
               }}
-              className={`py-2 px-1 rounded-lg text-[10px] font-bold flex flex-col items-center justify-center gap-1 transition-all ${
+              className={`py-1.5 px-1 rounded-lg text-[10px] font-bold flex flex-col items-center justify-center gap-1 transition-all ${
                 isSelected
                   ? "border-2 border-[#2B1D16] dark:border-amber-500 bg-[#FAF7F2] dark:bg-[#251810] text-[#2B1D16] dark:text-amber-200 shadow-xs"
                   : "border border-[#E8DFD7] dark:border-[#382418] bg-white dark:bg-[#1E140E] text-[#6E5448] dark:text-warmgray-300 hover:border-amber-600/40 hover:bg-[#FAF7F2]/50 dark:hover:bg-[#251810]"
@@ -859,16 +854,16 @@ export function CartPanel() {
 
       {/* 7.5. Cash Tendered & Change Due Section (when Cash is selected) */}
       {paymentMethod === "CASH" && items.length > 0 && (
-        <div className="mb-3 p-2.5 rounded-xl bg-[#FAF7F2] dark:bg-[#251810] border border-[#E8DFD7] dark:border-[#382418] space-y-2 shrink-0">
+        <div className="mb-2 p-2 rounded-xl bg-[#FAF7F2] dark:bg-[#251810] border border-[#E8DFD7] dark:border-[#382418] space-y-1.5 shrink-0">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-[#6E5448] dark:text-warmgray-300 flex items-center gap-1.5">
-              <Banknote className="w-3.5 h-3.5 text-amber-700 dark:text-amber-400" />
-              <span>{t.pos.tenderPrompt || "Cash Tendered"}</span>
+            <span className="text-[10px] font-bold text-[#6E5448] dark:text-warmgray-300 flex items-center gap-1">
+              <Banknote className="w-3 h-3 text-amber-700 dark:text-amber-400" />
+              <span>{t.pos.tenderPrompt || "Amount Tendered"}</span>
             </span>
             <button
               type="button"
               onClick={() => setCashTendered(total)}
-              className="text-[10px] font-bold text-amber-800 dark:text-amber-400 hover:underline px-1.5 py-0.5 rounded bg-amber-100/70 dark:bg-amber-900/40 transition"
+              className="text-[10px] font-bold text-amber-800 dark:text-amber-400 hover:underline px-1.5 py-0.5 rounded bg-amber-100/70 dark:bg-amber-900/40 transition font-mono"
             >
               {t.pos.exactAmount || "Exact"} ({total.toFixed(2)})
             </button>
@@ -889,7 +884,7 @@ export function CartPanel() {
                 setCashTendered(val !== null && !isNaN(val) ? val : null);
               }}
               placeholder={total.toFixed(2)}
-              className="w-full pl-12 pr-8 rtl:pl-8 rtl:pr-12 py-1.5 rounded-lg bg-white dark:bg-[#1E140E] border border-warmgray-300 dark:border-warmgray-700 text-sm font-bold text-[#231815] dark:text-white font-mono focus:outline-none focus:ring-2 focus:ring-amber-500"
+              className="w-full pl-12 pr-8 rtl:pl-8 rtl:pr-12 py-1 rounded-lg bg-white dark:bg-[#1E140E] border border-warmgray-300 dark:border-warmgray-700 text-sm font-bold text-[#231815] dark:text-white font-mono focus:outline-none focus:ring-2 focus:ring-amber-500"
             />
             {cashTendered !== null && (
               <button
@@ -904,11 +899,11 @@ export function CartPanel() {
           </div>
 
           {/* Quick Denomination Chips */}
-          <div className="flex items-center gap-1.5 flex-wrap">
+          <div className="flex items-center gap-1 flex-wrap">
             <button
               type="button"
               onClick={() => setCashTendered(total)}
-              className={`px-2 py-1 rounded-md text-[10px] font-bold font-mono transition ${
+              className={`px-2 py-0.5 rounded-md text-[10px] font-bold font-mono transition ${
                 cashTendered === total || cashTendered === null
                   ? "bg-[#2B1D16] dark:bg-amber-600 text-white shadow-xs"
                   : "bg-white dark:bg-[#1E140E] border border-warmgray-200 dark:border-warmgray-700 text-warmgray-700 dark:text-warmgray-300 hover:border-amber-500"
@@ -932,7 +927,7 @@ export function CartPanel() {
                     key={val}
                     type="button"
                     onClick={() => setCashTendered(val)}
-                    className={`px-2 py-1 rounded-md text-[10px] font-bold font-mono transition ${
+                    className={`px-2 py-0.5 rounded-md text-[10px] font-bold font-mono transition ${
                       cashTendered === val
                         ? "bg-[#2B1D16] dark:bg-amber-600 text-white shadow-xs"
                         : "bg-white dark:bg-[#1E140E] border border-warmgray-200 dark:border-warmgray-700 text-warmgray-700 dark:text-warmgray-300 hover:border-amber-500"
@@ -946,14 +941,14 @@ export function CartPanel() {
 
           {/* Status: Change Due or Underpaid warning */}
           {cashTendered !== null && cashTendered < total ? (
-            <div className="p-2 rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 text-red-700 dark:text-red-300 text-xs font-semibold flex items-center justify-between">
+            <div className="py-1 px-2.5 rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 text-red-700 dark:text-red-300 text-xs font-semibold flex items-center justify-between">
               <span>{t.pos.underpaidWarning || "Underpaid"}</span>
               <span className="font-mono font-bold">
                 -SAR {(total - cashTendered).toFixed(2)}
               </span>
             </div>
           ) : (
-            <div className="p-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900/60 text-emerald-800 dark:text-emerald-300 text-xs font-bold flex items-center justify-between">
+            <div className="py-1 px-2.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900/60 text-emerald-800 dark:text-emerald-300 text-xs font-bold flex items-center justify-between">
               <span>{t.pos.changeDue || "Change Due"}</span>
               <span className="text-sm font-black font-mono">
                 SAR {(cashTendered !== null && cashTendered >= total ? cashTendered - total : 0).toFixed(2)}
@@ -970,9 +965,9 @@ export function CartPanel() {
           <button
             type="button"
             onClick={() => handleCompleteSale()}
-            disabled={items.length === 0 || isSubmitting || isGuest || isUnderpaid}
-            className={`w-full py-3.5 px-5 rounded-xl font-bold text-sm shadow-md transition-all flex items-center justify-between shrink-0 ${
-              items.length > 0 && !isSubmitting && !isGuest && !isUnderpaid
+            disabled={items.length === 0 || isSubmitting || isUnderpaid}
+            className={`w-full py-2.5 sm:py-3 px-4 rounded-xl font-bold text-sm shadow-md transition-all flex items-center justify-between shrink-0 ${
+              items.length > 0 && !isSubmitting && !isUnderpaid
                 ? "bg-[#2B1D16] hover:bg-[#3D271D] dark:bg-amber-600 dark:hover:bg-amber-500 text-white active:scale-[0.99] cursor-pointer"
                 : "bg-[#A69485]/40 text-white/80 cursor-not-allowed shadow-none"
             }`}
@@ -981,10 +976,6 @@ export function CartPanel() {
               <div className="w-full flex items-center justify-center gap-2">
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                 <span>{t.pos.processingSale || "Processing..."}</span>
-              </div>
-            ) : isGuest ? (
-              <div className="w-full text-center text-xs tracking-wider uppercase font-bold text-amber-900 dark:text-amber-200">
-                Guest Mode (View Only)
               </div>
             ) : isUnderpaid ? (
               <div className="w-full text-center text-xs tracking-wider uppercase font-bold text-red-100">

@@ -385,8 +385,8 @@ export default function LoginPage() {
                     <Eye className="w-3.5 h-3.5 text-amber-600" />
                     <span>
                       {isArabic
-                        ? "الدخول كزائر (وضع العرض فقط)"
-                        : "Explore as Guest (View-Only)"}
+                        ? "الدخول كزائر (تجربة وإنشاء الطلبات)"
+                        : "Explore as Guest (Create Orders & Explore)"}
                     </span>
                   </>
                 )}
