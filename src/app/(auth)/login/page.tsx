@@ -94,7 +94,7 @@ export default function LoginPage() {
       {/* ======================================================== */}
       {/* SIDE 1: BRAND SHOWCASE & ANIMATED COFFEE ART (Left / Side) */}
       {/* ======================================================== */}
-      <div className="relative w-full lg:w-[50%] xl:w-[52%] h-auto lg:h-full max-h-screen flex flex-col justify-between p-4 sm:p-6 lg:p-8 xl:p-10 bg-gradient-to-br from-[#1A0E08] via-[#140B06] to-[#0D0603] text-warmgray-100 overflow-hidden border-b lg:border-b-0 lg:border-e border-amber-900/30 shrink-0 lg:shrink">
+      <div className=" relative w-full lg:w-[50%] xl:w-[52%] h-auto lg:h-full max-h-screen md:flex hidden flex-col justify-between p-4 sm:p-6 lg:p-8 xl:p-10 bg-gradient-to-br from-[#1A0E08] via-[#140B06] to-[#0D0603] text-warmgray-100 overflow-hidden border-b lg:border-b-0 lg:border-e border-amber-900/30 shrink-0 lg:shrink">
         {/* Subtle Ambient Background Lighting */}
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(217,119,6,0.15),rgba(255,255,255,0))] pointer-events-none" />
         <div className="absolute -bottom-20 -left-20 w-80 h-80 rounded-full bg-amber-900/10 blur-[90px] pointer-events-none" />
